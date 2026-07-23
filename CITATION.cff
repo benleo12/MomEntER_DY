@@ -1,0 +1,52 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite the paper below."
+title: "MomEntER_DY: information-theoretic transfer of resummed Drell-Yan accuracy to event samples"
+authors:
+  - family-names: Assi
+    given-names: Benoît
+  - family-names: Bothmann
+    given-names: Enrico
+  - family-names: Campbell
+    given-names: John
+  - family-names: Gütschow
+    given-names: Christian
+  - family-names: Höche
+    given-names: Stefan
+  - family-names: Ju
+    given-names: Wan-Li
+  - family-names: Knobbe
+    given-names: Max
+  - family-names: Schönherr
+    given-names: Marek
+  - family-names: Thaler
+    given-names: Jesse
+  - family-names: Wagman
+    given-names: Michael L.
+repository-code: "https://github.com/benleo12/MomEntER_DY"
+license: BSD-3-Clause
+preferred-citation:
+  type: article
+  title: "Lattice-Constrained Drell-Yan Resummation as Positive-Weight Events"
+  authors:
+    - family-names: Assi
+      given-names: Benoît
+    - family-names: Bothmann
+      given-names: Enrico
+    - family-names: Campbell
+      given-names: John
+    - family-names: Gütschow
+      given-names: Christian
+    - family-names: Höche
+      given-names: Stefan
+    - family-names: Ju
+      given-names: Wan-Li
+    - family-names: Knobbe
+      given-names: Max
+    - family-names: Schönherr
+      given-names: Marek
+    - family-names: Thaler
+      given-names: Jesse
+    - family-names: Wagman
+      given-names: Michael L.
+  year: 2026
+  notes: "arXiv number to be added on submission."
