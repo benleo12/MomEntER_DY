@@ -40,10 +40,23 @@ w = reweight(w0, qT, m_ll, dphi_ll, energy="13TeV")   # numpy arrays or scalars
 ```
 
 You supply four per-event numbers: the generator weight `w0`, the dilepton `qT` and
-`m_ll` [GeV], and the acoplanarity `dphi_ll = π − Δφ_ll`. Above `qT = 200 GeV` the
-weight reverts to the prior (multiply that region by your own multijet+EW factor).
+`m_ll` [GeV], and the acoplanarity `dphi_ll = π − Δφ_ll`.
 The 28 scale/NP variations are `reweight_scheme(..., scheme=s)` for `s in schemes()`;
 their envelope is the theory band. See `examples/apply_quickstart.py`.
+
+**Hand-off (`gate`, default on).** By default the weight is smoothly returned to the
+prior above a `qT` hand-off window, so a merged/matched prior keeps its own
+multi-jet accuracy at large `qT` where the resummed input is neither valid nor
+needed. This is the right choice for a prior you trust in the tail. Pass
+`gate=False` to disable it and apply the pure reweighting across the full range
+(appropriate when the prior is far from the calculation everywhere, or for a
+diagnostic of the transfer itself):
+
+```python
+w = reweight(w0, qT, m_ll, dphi_ll, energy="13TeV", gate=False)   # no hand-off
+```
+
+The hand-off window is stored in the `gating` field of `lambda_export.json`.
 
 ### 2. Reproduce or re-fit from scratch
 
