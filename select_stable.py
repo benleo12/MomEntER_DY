@@ -103,8 +103,12 @@ def fit_apply(nm,lam0=None):
     la=np.log(np.maximum(np.abs(w),1e-300)); gmax=float((la+logit).max())
     e0=np.exp(la+logit-gmax); S1u=float((np.where(w>=0,1.,-1.)*e0).sum()); S0=float(w.sum())
     if not (S1u>0):
+        # TOTAL blow-up (weights all underflow): drop ALL offending moments at once, not
+        # a cap of 5.  Otherwise a pool with many high-power moments (e.g. rt^4*lnrt^4,
+        # huge at large rt) collapses N_eff to 0 and the timid 5/iter drop needs many slow
+        # full-sample iterations to escape.  Aggressive here, gentle (below) near stability.
         contrib=np.array([lam[k]*(side(facs[k][0],rt[ev:ev+1])[0]/sF[k])*(side(facs[k][1],d[ev:ev+1])[0]/sG[k]) for k in range(K)])
-        order=np.argsort(-np.abs(contrib)); wl=[int(k) for k in order if abs(contrib[k])>5.0][:5] or [int(order[0])]
+        order=np.argsort(-np.abs(contrib)); wl=[int(k) for k in order if abs(contrib[k])>5.0] or [int(order[0])]
         return 0.0, wl, (float(logit[ev]),float(rt[ev]),float(d[ev])), lam
     C=gmax+np.log(S1u/S0)                      # normalization shift
     if float(np.max(np.abs(logit-C)))>LOGIT_CAP:   # overflow guard fails -> unstable
@@ -115,9 +119,12 @@ def fit_apply(nm,lam0=None):
     # per-moment contribution at the worst-logit event -> which moment destabilizes most
     contrib=np.array([lam[k]*(side(facs[k][0],rt[ev:ev+1])[0]/sF[k])*(side(facs[k][1],d[ev:ev+1])[0]/sG[k]) for k in range(K)])
     order=np.argsort(-np.abs(contrib))
-    # batch-drop: all moments contributing |>5| to the worst event's logit (cap 5/iter);
-    # at least the single top contributor. Converges to single drops near stability.
-    worst=[int(k) for k in order if abs(contrib[k])>5.0][:5] or [int(order[0])]
+    # batch-drop all moments contributing |>5| to the worst event's logit.  Cap at 5/iter
+    # ONLY when the fit is stable enough to have a positive N_eff (gentle fine-tuning);
+    # on a total blow-up (N_eff=0) drop them all at once so a badly-conditioned pool
+    # escapes in one iteration instead of many slow full-sample passes.
+    worst=[int(k) for k in order if abs(contrib[k])>5.0] or [int(order[0])]
+    if neff>0: worst=worst[:5]
     print(f'      [fit {tfit:.0f}s, apply {tapp:.0f}s]',flush=True)
     return neff, worst, (float(logit[ev]),float(rt[ev]),float(d[ev])), lam
 cur=list(names)
