@@ -102,7 +102,7 @@ def sig_for(allf):
         if sc is not None or st is not None: return ((sc or 0)**2+(st or 0)**2)**0.5
     return None
 ssc_g=o.compute_sigma_theory(CSV)
-SIG_MODE=os.environ.get('SIG_MODE','statscale')
+SIG_MODE=os.environ.get('SIG_MODE','stat')
 if SIG_MODE in ('stat','cov'):      # stat-only central penalty: scale systematics are NOT independent
     ssc_g={}              # per-moment noise — they are correlated shifts already propagated
     print("  SIG_MODE=stat (central penalty: stat only; scale unc -> band)")   # via the 28-scheme band.
@@ -202,7 +202,7 @@ if int(os.environ.get('EXPORT','0')):
     print(f"  log_norm_shift C={C:.6f}")
     lam_phys=(lam_c/(sF*sG)).tolist()
     exp={'description':f'MaxEnt reweighting of {PRIOR} to Wan-Li N4LLp+N3LO. Per event, fully local: w_rew = w0 * exp( sum_k lambda_physical[k]*phi_k - log_norm_shift ). The shift already fixes the normalization (sum w_rew = sum w0); no global max or renormalization needed.',
-      'n_moments':K,'moments':names,'lambda_physical':lam_phys,'log_norm_shift':C,
+      'n_moments':K,'moments':names,'sig_mode':SIG_MODE,'lambda_physical':lam_phys,'log_norm_shift':C,
       'feature_convention':{'phi_k':'product over the two parts of moment name "A×B" (A=rt-side, B=dphi-side)',
         'monomials':'rt^k=rt**k, dphi^k=dphi**k, lnrt^k=log(rt)**k, lndphi^k=log(dphi)**k, const^0=1; parts within a side joined by *',
         'vars':'rt=qT/m_ll, dphi=pi-Delta_phi_ll; clip log args at 1e-12'},
@@ -306,7 +306,7 @@ if int(_os.environ.get('EXPORT_VARS','0')):
     schemes={labels[j]:{'group':groups[j],'log_norm_shift':float(Cs[j]),
                         'lambda_physical':(all_lams[j]/(sF*sG)).tolist()} for j in range(J)}
     out={'description':'Per-scheme MaxEnt reweighting (central + Wan-Li scale/NP variations). For scheme S, per event: w_rew = w0*exp(sum_k schemes[S].lambda_physical[k]*phi_k - schemes[S].log_norm_shift); then the SAME gating as the central file. phi_k and gating identical to lambda_export.json. Variations are first-order (linear-response) propagations of Wan-Li 28-scheme moment shifts; their envelope = the theory scale-uncertainty band.',
-         'n_moments':K,'moments':names,'n_schemes':J,'scheme_names':labels,
+         'n_moments':K,'moments':names,'sig_mode':SIG_MODE,'n_schemes':J,'scheme_names':labels,
          'feature_convention':{'phi_k':'product over the two parts of moment name "A×B"',
             'monomials':'rt^k=rt**k, dphi^k=dphi**k, lnrt^k=log(rt)**k, lndphi^k=log(dphi)**k, const^0=1; parts within a side joined by *',
             'vars':'rt=qT/m_ll, dphi=pi-Delta_phi_ll; clip log args at 1e-12'},

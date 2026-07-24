@@ -8,7 +8,7 @@
 #        -> winner: lambda_export + 29-scheme variations + per-event weights + apply-check.
 set -u
 E=$1; MOM="moments_${E}"; PRIOR="sherpa_prior_${E}"
-export SIG_MODE=${SIG_MODE:-statscale}; echo "SIG_MODE=$SIG_MODE"
+export SIG_MODE=${SIG_MODE:-stat}; echo "SIG_MODE=$SIG_MODE"
 SCR=${SCR:-./output}   # scratch/log directory (override with SCR=...)
 mkdir -p "$SCR"; cd "$(dirname "$0")"
 echo "===== PIPELINE $E  ($(date)) ====="
