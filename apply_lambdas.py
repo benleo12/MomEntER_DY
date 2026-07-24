@@ -60,7 +60,7 @@ def features(names, rt, dphi):
     return np.column_stack(cols)
 
 
-def _apply(w0, qT, m_ll, dphi_ll, names, lam, C, gat, gate=True):
+def _apply(w0, qT, m_ll, dphi_ll, names, lam, C, gat, gate=True, w0_tail=None):
     w0, qT, m_ll, dphi_ll = map(np.asarray, (w0, qT, m_ll, dphi_ll))
     logit = features(names, qT / m_ll, dphi_ll) @ np.asarray(lam)   # sum_k lambda_k phi_k
     w_rew = w0 * np.exp(logit - C)                       # event-local: fixed shift, no renorm
@@ -69,23 +69,34 @@ def _apply(w0, qT, m_ll, dphi_ll, names, lam, C, gat, gate=True):
     lo, hi = gat['window_GeV']                           # smooth hand-off [120,200] GeV
     t = np.clip((qT - lo) / (hi - lo), 0, 1)
     beta = 1.0 - (6*t**5 - 15*t**4 + 10*t**3)            # 1 below lo, 0 above hi
-    return beta * w_rew + (1.0 - beta) * w0              # above hi -> w0 (apply your own factor)
+    # Above the hand-off the sample is the generator's, so a generator variation weight
+    # (e.g. one member of the 7-point muR/muF set) may be supplied for the tail branch.
+    # Band recipe: envelope over the 29 theory schemes (w0_tail=None) UNION the generator
+    # variations (scheme='central', w0_tail=w0_V). The theory schemes revert to the
+    # central prior in the tail (resummation is off there), the generator variations act
+    # only in the tail, so the two tile the phase space without double counting.
+    wt = w0 if w0_tail is None else np.asarray(w0_tail)
+    return beta * w_rew + (1.0 - beta) * wt
 
 
-def reweight(w0, qT, m_ll, dphi_ll, energy="13TeV", jpath=None, gate=True):
-    """Central reweighting. `energy` in {"13TeV","13p6TeV"}, or pass an explicit jpath."""
+def reweight(w0, qT, m_ll, dphi_ll, energy="13TeV", jpath=None, gate=True, w0_tail=None):
+    """Central reweighting. `energy` in {"13TeV","13p6TeV"}, or pass an explicit jpath.
+    `w0_tail`: optional generator variation weight used in the tail branch of the
+    hand-off (e.g. one member of the sample's 7-point muR/muF variation set)."""
     d = json.load(open(jpath or _default(energy)))
     return _apply(w0, qT, m_ll, dphi_ll, d['moments'],
-                  d['lambda_physical'], d['log_norm_shift'], d['gating'], gate)
+                  d['lambda_physical'], d['log_norm_shift'], d['gating'], gate, w0_tail)
 
 
 def reweight_scheme(w0, qT, m_ll, dphi_ll, scheme='central',
-                    energy="13TeV", jpath=None, gate=True):
-    """One scale/NP scheme (scheme='central','2MuR',...). Repeat over all schemes for the band."""
+                    energy="13TeV", jpath=None, gate=True, w0_tail=None):
+    """One scale/NP scheme (scheme='central','2MuR',...). Repeat over all schemes for the band.
+    Full band with generator tail variations: envelope over the 29 theory schemes
+    (w0_tail=None) union reweight(..., w0_tail=w0_V) for each generator variation V."""
     d = json.load(open(jpath or _default(energy, variations=True)))
     s = d['schemes'][scheme]
     return _apply(w0, qT, m_ll, dphi_ll, d['moments'],
-                  s['lambda_physical'], s['log_norm_shift'], d['gating'], gate)
+                  s['lambda_physical'], s['log_norm_shift'], d['gating'], gate, w0_tail)
 
 
 def schemes(energy="13TeV", jpath=None):

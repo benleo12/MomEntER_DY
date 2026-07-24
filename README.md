@@ -58,6 +58,26 @@ w = reweight(w0, qT, m_ll, dphi_ll, energy="13TeV", gate=False)   # no hand-off
 
 The hand-off window is stored in the `gating` field of `lambda_export.json`.
 
+**Generator tail variations (`w0_tail`).** Above the hand-off the events are the
+generator's, so the uncertainty there should be the sample's own scale variation
+(e.g. the standard 7-point muR/muF set). Pass each variation weight through the
+tail branch and take the union envelope with the theory schemes:
+
+```python
+band  = [reweight_scheme(w0, qT, m_ll, dphi_ll, scheme=s) for s in schemes()]   # theory, below gate
+band += [reweight(w0, qT, m_ll, dphi_ll, w0_tail=w0_V) for w0_V in seven_point] # generator, above gate
+```
+
+The theory schemes revert to the central prior in the tail and the generator
+variations act only there, so the two tile the phase space without double counting.
+
+**Scale nuisance sets.** `products/<E>/lambda_export_nuisance.json` compresses the
+28 schemes into 3 orthogonal nuisance directions (99+ percent of the scale
+variance), each shipped as +-1 sigma multiplier sets, analogous to Hessian PDF
+error sets. Coverage is still quoted from the scheme envelope, the nuisance sets
+provide the correlated parametrization downstream fits need. Rebuild with
+`make_nuisance_sets.py`.
+
 ### 2. Reproduce or re-fit from scratch
 
 `run_pipeline.sh <ENERGY>` runs the full chain — candidate pools → stability prune →
