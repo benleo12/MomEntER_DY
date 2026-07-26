@@ -42,7 +42,7 @@ w = reweight(w0, qT, m_ll, dphi_ll, energy="13TeV")   # numpy arrays or scalars
 You supply four per-event numbers: the generator weight `w0`, the dilepton `qT` and
 `m_ll` [GeV], and the acoplanarity `dphi_ll = π − Δφ_ll`.
 The 28 scale/NP variations are `reweight_scheme(..., scheme=s)` for `s in schemes()`;
-their envelope is the theory band. See `examples/apply_quickstart.py`.
+the theory band combines the per-scale deviations in quadrature (pair the 0p5/2 variations of each scale). See `examples/apply_quickstart.py`.
 
 **Hand-off (`gate`, default on).** By default the weight is smoothly returned to the
 prior above a `qT` hand-off window, so a merged/matched prior keeps its own
@@ -61,7 +61,7 @@ The hand-off window is stored in the `gating` field of `lambda_export.json`.
 **Generator tail variations (`w0_tail`).** Above the hand-off the events are the
 generator's, so the uncertainty there should be the sample's own scale variation
 (e.g. the standard 7-point muR/muF set). Pass each variation weight through the
-tail branch and take the union envelope with the theory schemes:
+tail branch and combine with the theory schemes (per-scale quadrature below the gate, generator variations above):
 
 ```python
 band  = [reweight_scheme(w0, qT, m_ll, dphi_ll, scheme=s) for s in schemes()]   # theory, below gate
