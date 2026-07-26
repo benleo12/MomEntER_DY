@@ -74,7 +74,7 @@ variations act only there, so the two tile the phase space without double counti
 **Scale nuisance sets.** `products/<E>/lambda_export_nuisance.json` compresses the
 28 schemes into 3 orthogonal nuisance directions (99+ percent of the scale
 variance), each shipped as +-1 sigma multiplier sets, analogous to Hessian PDF
-error sets. Coverage is still quoted from the scheme envelope, the nuisance sets
+error sets. Coverage is still quoted from the per-scale quadrature of the schemes, the nuisance sets
 provide the correlated parametrization downstream fits need. Rebuild with
 `make_nuisance_sets.py`.
 
