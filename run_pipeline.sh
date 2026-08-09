@@ -8,7 +8,7 @@
 #        -> winner: lambda_export + 29-scheme variations + per-event weights + apply-check.
 set -u
 E=$1; MOM="moments_${E}"; PRIOR="sherpa_prior_${E}"
-export SIG_MODE=${SIG_MODE:-stat}; echo "SIG_MODE=$SIG_MODE"
+export SIG_MODE=${SIG_MODE:-stat}; export MIN_EFF_EVENTS=${MIN_EFF_EVENTS:-100000}; echo "SIG_MODE=$SIG_MODE MIN_EFF_EVENTS=$MIN_EFF_EVENTS"
 SCR=${SCR:-./output}   # scratch/log directory (override with SCR=...)
 mkdir -p "$SCR"; cd "$(dirname "$0")"
 echo "===== PIPELINE $E  ($(date)) ====="
@@ -36,7 +36,7 @@ fi
 echo "--- [2/5] stability prune + [3/5] PROG validation per pool: $POOLS ---"
 for P in $POOLS; do
   echo "  [pool $P] prune ..."
-  ENERGY=$E NEV=${NEV_PIPE:-50000000} FIT_NEV=${FIT_PIPE:-2000000} BATCH=2000000 FRAC=0.5 MAX_STEPS=200 MAXDROP=60 \
+  ENERGY=$E NEV=${NEV_PIPE:-50000000} FIT_NEV=${FIT_PIPE:-2000000} BATCH=2000000 FRAC=0.5 MAX_STEPS=200 MAXDROP=60 MIN_EFF_EVENTS=$MIN_EFF_EVENTS \
     PYTHONUNBUFFERED=1 python select_stable.py "$MOM/cand_$P.json" "$MOM/stable_$P.json" > "$SCR/sel_${E}_$P.log" 2>&1 \
     || { echo "  [pool $P] PRUNE FAILED"; tail -3 "$SCR/sel_${E}_$P.log"; continue; }
   grep -E "STABLE at" "$SCR/sel_${E}_$P.log" | sed "s/^/  [pool $P]/"
