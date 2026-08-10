@@ -8,7 +8,7 @@
 #        -> winner: lambda_export + 29-scheme variations + per-event weights + apply-check.
 set -u
 E=$1; MOM="moments_${E}"; PRIOR="sherpa_prior_${E}"
-export SIG_MODE=${SIG_MODE:-stat}; export MIN_EFF_EVENTS=${MIN_EFF_EVENTS:-100000}; echo "SIG_MODE=$SIG_MODE MIN_EFF_EVENTS=$MIN_EFF_EVENTS"
+export SIG_MODE=${SIG_MODE:-stat}; export FULLFIT_EXPORT=${FULLFIT_EXPORT:-1}; export MIN_EFF_EVENTS=${MIN_EFF_EVENTS:-100000}; echo "SIG_MODE=$SIG_MODE MIN_EFF_EVENTS=$MIN_EFF_EVENTS"
 SCR=${SCR:-./output}   # scratch/log directory (override with SCR=...)
 mkdir -p "$SCR"; cd "$(dirname "$0")"
 echo "===== PIPELINE $E  ($(date)) ====="
@@ -71,13 +71,13 @@ PY
 echo "  WINNER: $WINNER  (set -> $MOM/stable_WINNER.json)"
 
 echo "--- [5/5] winner exports + apply-check ---"
-ENERGY=$E NEV=${NEV_FULL:-51200000} FIT_NEV=${FIT_PIPE:-2000000} BATCH=2000000 EXPORT=1 \
+ENERGY=$E NEV=${NEV_FULL:-51200000} FIT_NEV=${FIT_PIPE:-2000000} FULLFIT=$FULLFIT_EXPORT BATCH=2000000 EXPORT=1 \
   PYTHONUNBUFFERED=1 python final_plots_pro.py "$MOM/stable_WINNER.json" > "$SCR/exp_$E.log" 2>&1
 grep -E "wrote|log_norm" "$SCR/exp_$E.log" | tail -2
-ENERGY=$E NEV=${NEV_FULL:-51200000} FIT_NEV=${FIT_PIPE:-2000000} NEV_BAND=2000000 BATCH=2000000 SCHMAX=28 RCOND=1e-3 EXPORT_VARS=1 \
+ENERGY=$E NEV=${NEV_FULL:-51200000} FIT_NEV=${FIT_PIPE:-2000000} FULLFIT=$FULLFIT_EXPORT NEV_BAND=2000000 BATCH=2000000 SCHMAX=28 RCOND=1e-3 EXPORT_VARS=1 \
   PYTHONUNBUFFERED=1 python final_plots_pro.py "$MOM/stable_WINNER.json" > "$SCR/expv_$E.log" 2>&1
 grep -E "wrote" "$SCR/expv_$E.log" | tail -1
-ENERGY=$E NEV=${NEV_FULL:-51200000} FIT_NEV=${FIT_PIPE:-2000000} BATCH=2000000 GATE=1 GATE_LO=120 GATE_HI=200 \
+ENERGY=$E NEV=${NEV_FULL:-51200000} FIT_NEV=${FIT_PIPE:-2000000} FULLFIT=$FULLFIT_EXPORT BATCH=2000000 GATE=1 GATE_LO=120 GATE_HI=200 \
   WRITE_WEIGHTS="$MOM/sherpa_${E}_maxent_weights" \
   PYTHONUNBUFFERED=1 python final_plots_pro.py "$MOM/stable_WINNER.json" > "$SCR/wts_$E.log" 2>&1
 grep -E "wrote" "$SCR/wts_$E.log" | tail -1

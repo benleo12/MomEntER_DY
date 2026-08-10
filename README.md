@@ -78,6 +78,13 @@ error sets. Coverage is still quoted from the per-scale quadrature of the scheme
 provide the correlated parametrization downstream fits need. Rebuild with
 `make_nuisance_sets.py`.
 
+**Fit-sample recipe (default).** Candidate screening, stability pruning, and the
+out-of-sample model selection run on a fixed 2M-event subsample (cheap, and moment
+estimates are already far more precise than the theory targets there). The delivered
+multipliers are then refit on the FULL sample (`FULLFIT_EXPORT=1`, streaming fit), so
+the exported lambdas close the target moments on all events; a 2M-subsample fit
+reproduces them to about 1 percent in the multiplier norm.
+
 ### 2. Reproduce or re-fit from scratch
 
 `run_pipeline.sh <ENERGY>` runs the full chain — candidate pools → stability prune →
