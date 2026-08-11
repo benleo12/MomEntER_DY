@@ -1,0 +1,11 @@
+<initrwgt>
+<weightgroup name='scale_variation' combine='envelope'>
+<weight id='1001'> renscfact=1d0 facscfact=1d0 </weight>
+<weight id='1002'> renscfact=0.5d0 facscfact=0.5d0 </weight>
+<weight id='1003'> renscfact=0.5d0 facscfact=1d0 </weight>
+<weight id='1004'> renscfact=1d0 facscfact=0.5d0 </weight>
+<weight id='1005'> renscfact=1d0 facscfact=2d0 </weight>
+<weight id='1006'> renscfact=2d0 facscfact=1d0 </weight>
+<weight id='1007'> renscfact=2d0 facscfact=2d0 </weight>
+</weightgroup>
+</initrwgt>

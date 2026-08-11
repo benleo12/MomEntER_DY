@@ -16,7 +16,7 @@ ACC="N4LL'+N3LO"; ACC_SLUG="N4LLp+N3LO"
 # ---- energy switch (default 13 TeV) ----
 ENE=os.environ.get('ENERGY','13TeV')
 _EMAP={'13TeV':('13TeV','13TeV_IncPS','13TeV'),'13p6TeV':('13p6TeV','13.6TeV_IncPS','13p6TeV'),
-       '13TeV_v2':('13TeV_v2','13TeV_IncPS','13TeV'),'13p6TeV_v2':('13p6TeV_v2','13.6TeV_IncPS','13p6TeV'),'13TeV_m':('13TeV_m','13TeV_IncPS','13TeV'),'13TeV_py':('13TeV_py','13TeV_IncPS','13TeV'),'13TeV_pwg':('13TeV_pwg','13TeV_IncPS','13TeV'),'13TeV_lomlm':('13TeV_lomlm','13TeV_IncPS','13TeV')}
+       '13TeV_v2':('13TeV_v2','13TeV_IncPS','13TeV'),'13p6TeV_v2':('13p6TeV_v2','13.6TeV_IncPS','13p6TeV'),'13TeV_m':('13TeV_m','13TeV_IncPS','13TeV'),'13TeV_py':('13TeV_py','13TeV_IncPS','13TeV'),'13TeV_pwg':('13TeV_pwg','13TeV_IncPS','13TeV'),'13TeV_lomlm':('13TeV_lomlm','13TeV_IncPS','13TeV'),'13TeV_v3':('13TeV_v3','13TeV_IncPS','13TeV'),'13TeV_pwg_M0505':('13TeV_pwg_M0505','13TeV_IncPS','13TeV'),'13TeV_pwg_M051':('13TeV_pwg_M051','13TeV_IncPS','13TeV'),'13TeV_pwg_M105':('13TeV_pwg_M105','13TeV_IncPS','13TeV'),'13TeV_pwg_M12':('13TeV_pwg_M12','13TeV_IncPS','13TeV'),'13TeV_pwg_M21':('13TeV_pwg_M21','13TeV_IncPS','13TeV'),'13TeV_pwg_M22':('13TeV_pwg_M22','13TeV_IncPS','13TeV'),'13TeV_v3_M0505':('13TeV_v3_M0505','13TeV_IncPS','13TeV'),'13TeV_v3_M051':('13TeV_v3_M051','13TeV_IncPS','13TeV'),'13TeV_v3_M105':('13TeV_v3_M105','13TeV_IncPS','13TeV'),'13TeV_v3_M12':('13TeV_v3_M12','13TeV_IncPS','13TeV'),'13TeV_v3_M21':('13TeV_v3_M21','13TeV_IncPS','13TeV'),'13TeV_v3_M22':('13TeV_v3_M22','13TeV_IncPS','13TeV')}
 if ENE not in _EMAP: raise SystemExit(f"unknown ENERGY={ENE}")
 _mtag,_qdir,_qtag=_EMAP[ENE]
 MOM=f"moments_{_mtag}"; CSV=f"{MOM}/DYMoments_{ACC_SLUG}.csv"; PRIOR=f"sherpa_prior_{_mtag}"
@@ -494,6 +494,29 @@ if int(os.environ.get('GATE','0')):
         a1.set_ylim(0.8,1.2); a1.set_ylabel('ratio to theory'); a1.set_xlabel(xl)
         out=f"{MOM}/PAPER_GATE_{tag}.png"; fig.savefig(out,dpi=150,bbox_inches='tight'); plt.close(fig); print(f"  wrote {out}")
     sys.exit(0)
+# ---- shower (prior) variation envelope: per-variation lambda applied to per-variation weights ----
+PVJ=f"{MOM}/lambda_export_prior_variations.json"; W_PVAR=[]
+if os.path.exists(PVJ) and os.path.isdir(f"{PRIOR}/variations") and int(os.environ.get('SHOWER_VARS','1')):
+    import pandas as _pd, time as _tt; _t0=_tt.time()
+    _pv=json.load(open(PVJ)); _Vs=list(_pv['schemes'].items())
+    _glo=float(os.environ.get('GATE_LO',120)); _ghi=float(os.environ.get('GATE_HI',200))
+    _tz=np.clip((pT-_glo)/(_ghi-_glo),0,1); _beta=1-(6*_tz**5-15*_tz**4+10*_tz**3)
+    _LAM=np.column_stack([np.array(_e['lambda_physical'])*(sF*sG) for _V,_e in _Vs])
+    _LG=np.empty((NEV,len(_Vs)),dtype=np.float64)
+    for _a in range(0,NEV,B_):
+        _b=min(_a+B_,NEV); _LG[_a:_b]=(Fs(_a,_b)[:,ii]*Gs(_a,_b)[:,jj])@_LAM
+    for _j,(_V,_e) in enumerate(_Vs):
+        _npv=f"{PRIOR}/variations/{_V}.npy"
+        if os.path.exists(_npv):
+            _wvf=np.load(_npv,mmap_mode='r')
+        else:
+            _wvf=_pd.read_csv(f"{PRIOR}/variations/{_V}.csv.gz",header=None).values.ravel()[1:].astype(float)
+            np.save(_npv,_wvf)
+        _wv=np.asarray(_wvf[idx],dtype=np.float64)
+        _wr=_wv*np.exp(_LG[:,_j]-_e['log_norm_shift'])
+        W_PVAR.append(_beta*_wr+(1.0-_beta)*_wv)
+    del _LG
+    print(f"  shower-variation envelope: {len(W_PVAR)} variations in {(_tt.time()-_t0)/60:.1f} min (single feature pass + npy cache)",flush=True)
 for tag,xl,e,dist,x,logx in [('rT',r'$r_T=p_T/m_{\ell\ell}$',RT,td['rTDist'],rt,False),
                              ('dphi',r'$\pi-\Delta\phi_{\ell\ell}$',DP[DP<=dmax+1e-9],td['dphiDist'],d,False),
                              ('pT',r'$q_T=p_T^{\ell\ell}$ [GeV]',PT,qt,pT,False)]:
@@ -521,9 +544,17 @@ for tag,xl,e,dist,x,logx in [('rT',r'$r_T=p_T/m_{\ell\ell}$',RT,td['rTDist'],rt,
     sb_lo=np.where(safe,blo/C,np.nan); sb_hi=np.where(safe,bhi/C,np.nan); stt=np.where(safe,stat/C,0.0)
     band(a1,e,sb_lo,sb_hi,color='C3',alpha=0.18,label=r'Theory unc.'); band(a1,e,1-stt,1+stt,color='0.5',alpha=0.30)
     band(a1,e,rloT,rhiT,color='C0',alpha=0.22,label=r'Rew. unc.')
+    if W_PVAR:
+        _pvh=np.vstack([mc_on(x,_w,e) for _w in W_PVAR]+[rew])
+        bandh(a1,e,np.where(safe,_pvh.min(0)/C,np.nan),np.where(safe,_pvh.max(0)/C,np.nan),'C2')
     a1.axhline(1,color='k',lw=0.7)
     stair(a1,e,rp,color='C3',lw=1.3,ls='--'); stair(a1,e,rr,color='C0',lw=1.6)
-    a1.set_ylim(0.8,1.2); a1.set_ylabel(r'Ratio'); a1.legend(fontsize=8,loc='upper left',ncol=2)
+    a1.set_ylim(0.8,1.2); a1.set_ylabel(r'Ratio')
+    _h,_l=a1.get_legend_handles_labels()
+    if W_PVAR:
+        from matplotlib.patches import Patch as _P
+        _h.append(_P(facecolor='none',edgecolor='C2',hatch='////')); _l.append('Shower unc.')
+    a1.legend(_h,_l,fontsize=8,loc='upper left',ncol=3 if W_PVAR else 2)
     plt.setp(a1.get_xticklabels(),visible=False)
     # --- one ratio panel per uncertainty type: theory (solid) + reweighted (hatched) ---
     axes_g=[]

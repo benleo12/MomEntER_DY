@@ -58,6 +58,16 @@ w = reweight(w0, qT, m_ll, dphi_ll, energy="13TeV", gate=False)   # no hand-off
 
 The hand-off window is stored in the `gating` field of `lambda_export.json`.
 
+**Generator scale variations.** If your prior carries its own scale-variation weights,
+fit one multiplier set per variation (each on its own weight column) and take the
+envelope over the resulting samples: below the hand-off the theory targets pin the
+constrained spectra so the variations largely collapse, and what remains measures the
+finite-moment-basis residual, while above the hand-off the envelope supplies the
+generator uncertainty the reweighting itself cannot provide. The validation plotter
+draws this automatically as the "Shower unc." band when
+`products/<E>/lambda_export_prior_variations.json` and a `variations/` directory are
+present. `products/13TeV_powheg/` ships such a set.
+
 **Generator tail variations (`w0_tail`).** Above the hand-off the events are the
 generator's, so the uncertainty there should be the sample's own scale variation
 (e.g. the standard 7-point muR/muF set). Pass each variation weight through the
@@ -110,9 +120,17 @@ moments in `moments/`.
 | `run_pipeline.sh` | end-to-end driver (pools → prune → fit → select → export) |
 | `verify.py` | reproduction checks (see [`VERIFY.md`](VERIFY.md)) |
 | `moments/<E>/` | analytic N⁴LL′+N³LO moments and distributions, and the selected moment set, per energy |
-| `products/<E>/` | **the delivered result**: `lambda_export.json` (+ 28-variation file) and the final plots |
+| `products/<E>/` | **the delivered result**: `lambda_export.json` (+ 28-variation file, and for priors that carry generator scale weights a `lambda_export_prior_variations.json`) and the final plots |
+| `examples/powheg_prior.md` | end-to-end recipe for reproducing the POWHEG+Pythia8 prior and its 7-point variations |
 
-Two energies are shipped: `13TeV` (41 moments) and `13p6TeV` (28 moments).
+Three priors are shipped: `13TeV` and `13p6TeV` (Sherpa NLO multi-jet merged, the
+published deliverables) and `13TeV_powheg` (POWHEG-BOX Z + Pythia 8, 61 moments).
+The POWHEG entry is a complete worked example on an independent generator: see
+[`examples/powheg_prior.md`](examples/powheg_prior.md) for the full recipe to
+regenerate that prior yourself (event generation, 7-point matrix-element scale
+reweighting, shower matching, prior layout), or apply its delivered weights directly.
+Its moment set differs from the Sherpa ones by design: the procedure is
+prior-agnostic, the selection is prior-specific.
 
 ## Verification
 
