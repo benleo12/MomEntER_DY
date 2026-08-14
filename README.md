@@ -68,6 +68,30 @@ draws this automatically as the "Shower unc." band when
 `products/<E>/lambda_export_prior_variations.json` and a `variations/` directory are
 present. `products/13TeV_powheg/` ships such a set.
 
+`make_7point_band.py` is the reference implementation and draws the figure:
+
+```bash
+ENERGY=13TeV_v3 VARDIR=variations python make_7point_band.py fig_7point_band.pdf
+```
+
+Per variation V the event weight is the gated blend
+
+    w_V = beta * [ w0_V * exp(sum_k lambda_V[k] phi_k - C_V) ]  +  (1 - beta) * w0_V
+
+so below the hand-off (beta = 1) the varied prior is reweighted onto the theory target and
+the seven samples collapse, while above it (beta = 0) the weights reduce to the bare prior
+variation and the band there *is* the generator's own muR/muF uncertainty.
+
+**Which weight family.** If your generator offers several scale-variation weight families,
+use the **matrix-element-only** one: it is the counterpart of the fixed-order scales in the
+calculation you are reweighting to. Families that also vary the parton shower move the prior
+in a direction the theory targets have no counterpart for, and the reweighting is then asked
+to undo a shower variation using constraints that cannot see it. For the shipped Sherpa prior
+the two families differ on 3.15 percent of events (median ratio 1.6, some sign flips) and the
+choice tightens the sub-hand-off band from 2.4 to 0.87 percent, leaving the tail unchanged at
+about 17 percent. For POWHEG the question does not arise: `compute_rwgt` varies the matrix
+element only, and all seven weights share one shower history.
+
 **Generator tail variations (`w0_tail`).** Above the hand-off the events are the
 generator's, so the uncertainty there should be the sample's own scale variation
 (e.g. the standard 7-point muR/muF set). Pass each variation weight through the

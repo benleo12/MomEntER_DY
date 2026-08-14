@@ -14,7 +14,7 @@ NEV=int(os.environ.get('NEV','50000000')); FIT=int(os.environ.get('FIT_NEV','200
 B_=int(os.environ.get('BATCH','2000000')); FRAC=float(os.environ.get('FRAC','0.5'))
 SIGREL=float(os.environ.get('SIG_FLOOR_REL','0.005')); MAXDROP=int(os.environ.get('MAXDROP','15'))
 ACC="N4LL'+N3LO"; ACC_SLUG="N4LLp+N3LO"
-ENE=os.environ.get('ENERGY','13TeV'); _M={'13TeV':'13TeV','13p6TeV':'13p6TeV','13TeV_v2':'13TeV_v2','13p6TeV_v2':'13p6TeV_v2','13TeV_m':'13TeV_m','13TeV_py':'13TeV_py','13TeV_pwg':'13TeV_pwg','13TeV_lomlm':'13TeV_lomlm'}[ENE]
+ENE=os.environ.get('ENERGY','13TeV'); _M={'13TeV':'13TeV','13p6TeV':'13p6TeV','13TeV_v2':'13TeV_v2','13p6TeV_v2':'13p6TeV_v2','13TeV_m':'13TeV_m','13TeV_py':'13TeV_py','13TeV_pwg':'13TeV_pwg','13TeV_pwg10M':'13TeV_pwg10M','13TeV_pwg10M_M0505':'13TeV_pwg10M_M0505','13TeV_v3_M0505':'13TeV_v3_M0505','13TeV_pwg10M_M051':'13TeV_pwg10M_M051','13TeV_v3_M051':'13TeV_v3_M051','13TeV_pwg10M_M105':'13TeV_pwg10M_M105','13TeV_v3_M105':'13TeV_v3_M105','13TeV_pwg10M_M12':'13TeV_pwg10M_M12','13TeV_v3_M12':'13TeV_v3_M12','13TeV_pwg10M_M21':'13TeV_pwg10M_M21','13TeV_v3_M21':'13TeV_v3_M21','13TeV_pwg10M_M22':'13TeV_pwg10M_M22','13TeV_v3_M22':'13TeV_v3_M22','13TeV_lomlm':'13TeV_lomlm','13TeV_v3':'13TeV_v3'}[ENE]
 MOM=f"moments_{_M}"; PRIOR=f"sherpa_prior_{_M}"; CSV=f"{MOM}/DYMoments_{ACC_SLUG}.csv"
 print(f"  ENERGY={ENE} prior={PRIOR} MOM={MOM}")
 names=json.load(open(SRC)).get('selected_moments') or []
@@ -27,6 +27,15 @@ def side(fl,x):
     return out
 # targets + physical sigma
 mom=o.load_moments(CSV); mbp={(a,b):v for a,b,v,u in mom}; mbu={(a,b):u for a,b,v,u in mom}
+# CORRELATED selection: prune against the SAME fixed-order variation of the targets that the
+# prior was varied with, so the surviving set is the one that is well determined for THAT pair.
+_TS=os.environ.get('TARGET_SCHEME','')
+if _TS:
+    _ms=o.load_moments_for_scale(CSV,f"{_TS}->FO","CV->Res")
+    _mbv={(a,b):v for a,b,v,u in _ms}
+    _n=sum(1 for k in mbp if k in _mbv and _mbv[k]!=mbp[k])
+    mbp={**mbp,**_mbv}
+    print(f"  TARGET_SCHEME={_TS}: selecting against {_TS}->FO targets ({_n} moments differ)")
 ssc=o.compute_sigma_theory(CSV)
 SIG_MODE=os.environ.get('SIG_MODE','statscale')
 if SIG_MODE in ('stat','cov'): ssc={}; print(f"  SIG_MODE={SIG_MODE} (diag penalty = stat only)")
@@ -124,7 +133,9 @@ def fit_apply(nm,lam0=None):
     # on a total blow-up (N_eff=0) drop them all at once so a badly-conditioned pool
     # escapes in one iteration instead of many slow full-sample passes.
     worst=[int(k) for k in order if abs(contrib[k])>5.0] or [int(order[0])]
+    _cap=int(os.environ.get('DROP_CAP','0'))   # 0 (default): aggressive on blow-up
     if neff>0: worst=worst[:5]
+    elif _cap>0: worst=worst[:_cap]            # DROP_CAP>0: gentle even on blow-up (diagnostic)
     print(f'      [fit {tfit:.0f}s, apply {tapp:.0f}s]',flush=True)
     return neff, worst, (float(logit[ev]),float(rt[ev]),float(d[ev])), lam
 cur=list(names)

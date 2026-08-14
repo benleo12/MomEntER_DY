@@ -16,10 +16,11 @@ ACC="N4LL'+N3LO"; ACC_SLUG="N4LLp+N3LO"
 # ---- energy switch (default 13 TeV) ----
 ENE=os.environ.get('ENERGY','13TeV')
 _EMAP={'13TeV':('13TeV','13TeV_IncPS','13TeV'),'13p6TeV':('13p6TeV','13.6TeV_IncPS','13p6TeV'),
-       '13TeV_v2':('13TeV_v2','13TeV_IncPS','13TeV'),'13p6TeV_v2':('13p6TeV_v2','13.6TeV_IncPS','13p6TeV'),'13TeV_m':('13TeV_m','13TeV_IncPS','13TeV'),'13TeV_py':('13TeV_py','13TeV_IncPS','13TeV'),'13TeV_pwg':('13TeV_pwg','13TeV_IncPS','13TeV'),'13TeV_lomlm':('13TeV_lomlm','13TeV_IncPS','13TeV'),'13TeV_v3':('13TeV_v3','13TeV_IncPS','13TeV'),'13TeV_pwg_M0505':('13TeV_pwg_M0505','13TeV_IncPS','13TeV'),'13TeV_pwg_M051':('13TeV_pwg_M051','13TeV_IncPS','13TeV'),'13TeV_pwg_M105':('13TeV_pwg_M105','13TeV_IncPS','13TeV'),'13TeV_pwg_M12':('13TeV_pwg_M12','13TeV_IncPS','13TeV'),'13TeV_pwg_M21':('13TeV_pwg_M21','13TeV_IncPS','13TeV'),'13TeV_pwg_M22':('13TeV_pwg_M22','13TeV_IncPS','13TeV'),'13TeV_v3_M0505':('13TeV_v3_M0505','13TeV_IncPS','13TeV'),'13TeV_v3_M051':('13TeV_v3_M051','13TeV_IncPS','13TeV'),'13TeV_v3_M105':('13TeV_v3_M105','13TeV_IncPS','13TeV'),'13TeV_v3_M12':('13TeV_v3_M12','13TeV_IncPS','13TeV'),'13TeV_v3_M21':('13TeV_v3_M21','13TeV_IncPS','13TeV'),'13TeV_v3_M22':('13TeV_v3_M22','13TeV_IncPS','13TeV')}
+       '13TeV_v2':('13TeV_v2','13TeV_IncPS','13TeV'),'13p6TeV_v2':('13p6TeV_v2','13.6TeV_IncPS','13p6TeV'),'13TeV_m':('13TeV_m','13TeV_IncPS','13TeV'),'13TeV_py':('13TeV_py','13TeV_IncPS','13TeV'),'13TeV_pwg':('13TeV_pwg','13TeV_IncPS','13TeV'),'13TeV_pwg10M':('13TeV_pwg10M','13TeV_IncPS','13TeV'),'13TeV_pwg10M_M0505':('13TeV_pwg10M_M0505','13TeV_IncPS','13TeV'),'13TeV_pwg10M_M051':('13TeV_pwg10M_M051','13TeV_IncPS','13TeV'),'13TeV_pwg10M_M105':('13TeV_pwg10M_M105','13TeV_IncPS','13TeV'),'13TeV_pwg10M_M12':('13TeV_pwg10M_M12','13TeV_IncPS','13TeV'),'13TeV_pwg10M_M21':('13TeV_pwg10M_M21','13TeV_IncPS','13TeV'),'13TeV_pwg10M_M22':('13TeV_pwg10M_M22','13TeV_IncPS','13TeV'),'13TeV_lomlm':('13TeV_lomlm','13TeV_IncPS','13TeV'),'13TeV_v3':('13TeV_v3','13TeV_IncPS','13TeV'),'13TeV_pwg_M0505':('13TeV_pwg_M0505','13TeV_IncPS','13TeV'),'13TeV_pwg_M051':('13TeV_pwg_M051','13TeV_IncPS','13TeV'),'13TeV_pwg_M105':('13TeV_pwg_M105','13TeV_IncPS','13TeV'),'13TeV_pwg_M12':('13TeV_pwg_M12','13TeV_IncPS','13TeV'),'13TeV_pwg_M21':('13TeV_pwg_M21','13TeV_IncPS','13TeV'),'13TeV_pwg_M22':('13TeV_pwg_M22','13TeV_IncPS','13TeV'),'13TeV_v3_M0505':('13TeV_v3_M0505','13TeV_IncPS','13TeV'),'13TeV_v3_M051':('13TeV_v3_M051','13TeV_IncPS','13TeV'),'13TeV_v3_M105':('13TeV_v3_M105','13TeV_IncPS','13TeV'),'13TeV_v3_M12':('13TeV_v3_M12','13TeV_IncPS','13TeV'),'13TeV_v3_M21':('13TeV_v3_M21','13TeV_IncPS','13TeV'),'13TeV_v3_M22':('13TeV_v3_M22','13TeV_IncPS','13TeV')}
 if ENE not in _EMAP: raise SystemExit(f"unknown ENERGY={ENE}")
 _mtag,_qdir,_qtag=_EMAP[ENE]
 MOM=f"moments_{_mtag}"; CSV=f"{MOM}/DYMoments_{ACC_SLUG}.csv"; PRIOR=f"sherpa_prior_{_mtag}"
+PRIOR_LABEL=('POWHEG+Pythia8 prior' if 'pwg' in _mtag else ('LO MLM prior' if 'lomlm' in _mtag else 'Sherpa prior'))
 QT_M=f"/Users/user/Library/CloudStorage/Dropbox/DY_reweighting_data/wju/{_qdir}/qT_1D_Dist_NP_{_qtag}_IncPS_varmT.m"
 print(f"  ENERGY={ENE}  prior={PRIOR}  MOM={MOM}")
 names=(json.load(open(SRC)).get('selected_moments') or []); print(f"  {len(names)} moments from {SRC}")
@@ -91,6 +92,15 @@ def apply_many(lams,nev):
 # ---- central reweight @NEV ----
 mom_c=o.load_moments(CSV); mbp_c={(a,b):v for a,b,v,u in mom_c}; tgt_c=mk_tgt(mbp_c)
 Tc=np.array([tgt_c(fa+fb) or 0.0 for fa,fb in facs])
+# CORRELATED prior/theory scale variation: fit the prior's mu_R/mu_F variation against
+# the SAME fixed-order variation of the targets, instead of against the central targets.
+_TS=os.environ.get('TARGET_SCHEME','')
+if _TS:
+    _ms=o.load_moments_for_scale(CSV,f"{_TS}->FO","CV->Res")
+    _tg=mk_tgt({(a,b):v for a,b,v,u in _ms})
+    _Tv=np.array([_tg(fa+fb) or 0.0 for fa,fb in facs])
+    _n=int(np.sum(np.abs(_Tv-Tc)>0)); _Tcen=Tc.copy(); Tc=_Tv
+    print(f"  TARGET_SCHEME={_TS}: using {_TS}->FO targets ({_n}/{len(facs)} moments differ from central)")
 mbu_c={(a,b):u for a,b,v,u in mom_c}
 def sig_for(allf):
     fs=[f'{f}^{k}' for f,k in allf]; cs=[]
@@ -153,7 +163,11 @@ class StreamDual:
 print("  reweighting CENTRAL @%dM ..."%(NEV//1_000_000))
 # cache the expensive central fit (200-step Newton, deterministic) -> fast plot iteration
 import hashlib
-_LC=f"{MOM}/.lamc_{os.path.basename(SRC)}_{FIT}_{hashlib.md5(('|'.join(names)+SIG_MODE).encode()).hexdigest()[:8]}.npy"  # content+sigmode-keyed cache
+_TSTAG=('_'+_TS) if _TS else ''   # different TARGET_SCHEME -> different targets -> different cache file
+_LC=f"{MOM}/.lamc_{os.path.basename(SRC)}_{FIT}_{hashlib.md5(('|'.join(names)+SIG_MODE).encode()).hexdigest()[:8]}{_TSTAG}.npy"  # content+sigmode+target-keyed cache
+# fingerprint of the TARGET VECTOR itself: a cache built for different targets must never
+# be reused silently (this once made 6 "correlated" fits return the uncorrelated lambdas).
+_TFP=hashlib.md5(np.ascontiguousarray(Tc,dtype=np.float64).tobytes()).hexdigest()[:12]
 Tc_fit=Tc
 if int(os.environ.get('TARGET_SHIFT','0')):
     # first-order full-sample correction: the 2M fit matches the FIT slice's empirical
@@ -175,18 +189,65 @@ if int(os.environ.get('TARGET_SHIFT','0')):
     _LC=_LC.replace('.npy','_ts.npy')
 FULLFIT=int(os.environ.get('FULLFIT','0'))
 if FULLFIT: _LC=_LC.replace('.npy',f'_full{NEV//10**6}M.npy')
-if os.path.exists(_LC) and not int(os.environ.get('NOCACHE','0')):
+_SC=_LC.replace('.npy','.tgt')     # sidecar holding the target fingerprint of the cached fit
+def _cache_ok():
+    if not os.path.exists(_LC) or int(os.environ.get('NOCACHE','0')): return False
+    if os.path.exists(_SC):
+        old=open(_SC).read().strip()
+        if old!=_TFP:
+            print(f"  STALE cache {os.path.basename(_LC)}: targets changed ({old} -> {_TFP}) -> refitting")
+            return False
+    return True
+if _cache_ok():
     lam_c=np.load(_LC); print(f"  loaded cached lam_c from {_LC}")
+    if not os.path.exists(_SC): open(_SC,'w').write(_TFP)
 elif FULLFIT:
     print(f"  FULLFIT: streaming fit on ALL {NEV//10**6}M events ...")
     import time as _t; _t0=_t.time()
     _m=StreamDual(NEV,Tc/(sF*sG),list(Sig_scaled))
-    with contextlib.redirect_stdout(io.StringIO()):
-        o.optimize_newton(_m,max_steps=int(os.environ.get('MAX_STEPS','60')),tol=1e-9,verbose=False)
-    lam_c=_m.lam.copy(); np.save(_LC,lam_c)
+    # WARM_LAM: start from an already-converged lambda (e.g. the central fit) instead of 0.
+    # For a scale-varied target the solution sits close to the central one, and the Hessian
+    # is near-singular, so a cold start can wander into a huge-|lambda| non-converged state.
+    _WL=os.environ.get('WARM_LAM','')
+    if _WL and os.path.exists(_WL):
+        _m.lam=np.array(json.load(open(_WL))['lambda_physical'],float)*(sF*sG)
+        print(f"  warm start from {_WL}: |lam|max={np.abs(_m.lam).max():.4g}")
+    _CS=int(os.environ.get('CONT_STEPS','0'))
+    _MS=int(os.environ.get('MAX_STEPS','60'))
+    if _CS>1 and _TS and '_Tcen' in dir():
+        # checkpoint each stage: a 4h wallclock kill would otherwise lose the whole fit,
+        # since lam_c is only cached on completion.
+        _CKP=_LC.replace('.npy','_ckpt.npz')
+        _i0=0
+        if os.path.exists(_CKP) and not int(os.environ.get('NOCACHE','0')):
+            _ck=np.load(_CKP)
+            if int(_ck['n_steps'])==_CS and str(_ck['tfp'])==_TFP:
+                _i0=int(_ck['stage']); _m.lam=_ck['lam'].copy()
+                print(f"    resuming continuation from stage {_i0}/{_CS} (|lam|max={np.abs(_m.lam).max():.4g})",flush=True)
+        for _i in range(_i0+1,_CS+1):
+            _f=_i/_CS; _m.targets=(_Tcen+_f*(Tc-_Tcen))/(sF*sG)
+            with contextlib.redirect_stdout(io.StringIO()):
+                o.optimize_newton(_m,max_steps=_MS,tol=1e-9,verbose=False)
+            _g=_m.dual_loss_grad_hess(_m.lam)[1]
+            np.savez(_CKP,stage=_i,lam=_m.lam,n_steps=_CS,tfp=_TFP)
+            print(f"    continuation f={_f:.2f}: |lam|max={np.abs(_m.lam).max():.4g} |grad|max={np.abs(_g).max():.3e}",flush=True)
+    else:
+        with contextlib.redirect_stdout(io.StringIO()):
+            o.optimize_newton(_m,max_steps=_MS,tol=1e-9,verbose=False)
+    lam_c=_m.lam.copy()
+    # stationarity check: <g>_w must equal t - sigma^2 lambda. A silently non-converged fit
+    # once exported lambdas with |lam|~2000 and 2000% moment error -- never export blind again.
+    _lz,_mom,_=_m._pass(lam_c,False)
+    _res=np.abs(_mom-_m.targets+_m.reg_coef*lam_c)/np.maximum(np.abs(_m.targets),1e-30)
+    _bad=float(_res.max())
+    print(f"  stationarity residual: median {np.median(_res):.3e}  max {_bad:.3e}  |lam|max={np.abs(lam_c).max():.4g}")
+    if _bad>float(os.environ.get('FIT_TOL','1e-3')):
+        print(f"  *** NOT CONVERGED (max residual {_bad:.3e} > FIT_TOL) -- refusing to cache/export ***")
+        if int(os.environ.get('ALLOW_UNCONVERGED','0'))==0: raise SystemExit(3)
+    np.save(_LC,lam_c); open(_SC,'w').write(_TFP)
     print(f"  FULLFIT done in {(_t.time()-_t0)/60:.1f} min -> {_LC}")
 else:
-    lam_c=fit_lam(Tc_fit,Ff,Gf,w[:FIT]); np.save(_LC,lam_c); print(f"  fit + cached lam_c -> {_LC}")
+    lam_c=fit_lam(Tc_fit,Ff,Gf,w[:FIT]); np.save(_LC,lam_c); open(_SC,'w').write(_TFP); print(f"  fit + cached lam_c -> {_LC}")
 if int(os.environ.get('EXPORT','0')):
     # full-sample log-normalization shift C so that  w_rew = w0*exp(logit - C)  is already
     # correctly normalized (sum w_rew = sum w0) with NO global max and NO post-hoc rescale
@@ -478,7 +539,7 @@ if int(os.environ.get('GATE','0')):
         for axx in (ax,a1): axx.axvspan(wlo,whi,color='0.85',alpha=0.4,lw=0)
         band(ax,e,blo,bhi,color='C3',alpha=0.18)
         stair(ax,e,np.where(safe,cen,np.nan),color='C3',lw=1.6,label=r"Wan-Li $N^4LL'+N^3LO$")
-        stair(ax,e,np.where(safe,pri,np.nan),color='0.55',lw=1.3,ls='--',label='Sherpa prior')
+        stair(ax,e,np.where(safe,pri,np.nan),color='0.55',lw=1.3,ls='--',label=PRIOR_LABEL)
         stair(ax,e,np.where(safe,rew,np.nan),color='C0',lw=1.4,label='reweighted (all qT)')
         stair(ax,e,np.where(safe,gat,np.nan),color='C2',lw=1.4,ls=(0,(4,2)),label=fr'gated, hard cut @{QCUT:g}')
         band(ax,e,np.where(safe,tlo,np.nan),np.where(safe,thi,np.nan),color='C1',alpha=0.45)
@@ -531,7 +592,7 @@ for tag,xl,e,dist,x,logx in [('rT',r'$r_T=p_T/m_{\ell\ell}$',RT,td['rTDist'],rt,
     band(ax,e,blo,bhi,color='C3',alpha=0.20,label=r'theory scale$\,\oplus\,$stat')
     band(ax,e,cen*(1-stat/np.maximum(cen,1e-30)),cen*(1+stat/np.maximum(cen,1e-30)),color='0.5',alpha=0.30)
     stair(ax,e,ic,color='C3',lw=1.8,label=r"Wan-Li $N^4LL'+N^3LO$")
-    stair(ax,e,np.where(safe,pri,np.nan),color='0.55',lw=1.4,ls='--',label=r'Sherpa prior')
+    stair(ax,e,np.where(safe,pri,np.nan),color='0.55',lw=1.4,ls='--',label=PRIOR_LABEL)
     band(ax,e,rlo,rhi,color='C0',alpha=0.25,label=r'MaxEnt reweighted (scale band)')
     stair(ax,e,np.where(safe,rew,np.nan),color='C0',lw=1.6,label=r'MaxEnt reweighted')
     ax.set_yscale('log')
