@@ -68,7 +68,8 @@ draws this automatically as the "Shower unc." band when
 `products/<E>/lambda_export_prior_variations.json` and a `variations/` directory are
 present. `products/13TeV_powheg/` ships such a set.
 
-`make_7point_band.py` is the reference implementation and draws the figure:
+`make_7point_band.py` (one observable) and `make_7point_band3.py` (qT, rT and the
+acoplanarity together) are the reference implementations and draw the figure:
 
 ```bash
 ENERGY=13TeV_v3 VARDIR=variations python make_7point_band.py fig_7point_band.pdf
