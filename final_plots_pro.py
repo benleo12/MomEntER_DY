@@ -17,11 +17,14 @@ ACC="N4LL'+N3LO"; ACC_SLUG="N4LLp+N3LO"
 ENE=os.environ.get('ENERGY','13TeV')
 _EMAP={'13TeV':('13TeV','13TeV_IncPS','13TeV'),'13p6TeV':('13p6TeV','13.6TeV_IncPS','13p6TeV'),
        '13TeV_v2':('13TeV_v2','13TeV_IncPS','13TeV'),'13p6TeV_v2':('13p6TeV_v2','13.6TeV_IncPS','13p6TeV'),'13TeV_m':('13TeV_m','13TeV_IncPS','13TeV'),'13TeV_py':('13TeV_py','13TeV_IncPS','13TeV'),'13TeV_pwg':('13TeV_pwg','13TeV_IncPS','13TeV'),'13TeV_pwg10M':('13TeV_pwg10M','13TeV_IncPS','13TeV'),'13TeV_pwg10M_M0505':('13TeV_pwg10M_M0505','13TeV_IncPS','13TeV'),'13TeV_pwg10M_M051':('13TeV_pwg10M_M051','13TeV_IncPS','13TeV'),'13TeV_pwg10M_M105':('13TeV_pwg10M_M105','13TeV_IncPS','13TeV'),'13TeV_pwg10M_M12':('13TeV_pwg10M_M12','13TeV_IncPS','13TeV'),'13TeV_pwg10M_M21':('13TeV_pwg10M_M21','13TeV_IncPS','13TeV'),'13TeV_pwg10M_M22':('13TeV_pwg10M_M22','13TeV_IncPS','13TeV'),'13TeV_lomlm':('13TeV_lomlm','13TeV_IncPS','13TeV'),'13TeV_v3':('13TeV_v3','13TeV_IncPS','13TeV'),'13TeV_pwg_M0505':('13TeV_pwg_M0505','13TeV_IncPS','13TeV'),'13TeV_pwg_M051':('13TeV_pwg_M051','13TeV_IncPS','13TeV'),'13TeV_pwg_M105':('13TeV_pwg_M105','13TeV_IncPS','13TeV'),'13TeV_pwg_M12':('13TeV_pwg_M12','13TeV_IncPS','13TeV'),'13TeV_pwg_M21':('13TeV_pwg_M21','13TeV_IncPS','13TeV'),'13TeV_pwg_M22':('13TeV_pwg_M22','13TeV_IncPS','13TeV'),'13TeV_v3_M0505':('13TeV_v3_M0505','13TeV_IncPS','13TeV'),'13TeV_v3_M051':('13TeV_v3_M051','13TeV_IncPS','13TeV'),'13TeV_v3_M105':('13TeV_v3_M105','13TeV_IncPS','13TeV'),'13TeV_v3_M12':('13TeV_v3_M12','13TeV_IncPS','13TeV'),'13TeV_v3_M21':('13TeV_v3_M21','13TeV_IncPS','13TeV'),'13TeV_v3_M22':('13TeV_v3_M22','13TeV_IncPS','13TeV')}
-if ENE not in _EMAP: raise SystemExit(f"unknown ENERGY={ENE}")
+if ENE not in _EMAP:
+    # any tag with a prior directory on disk is accepted; typos still fail loudly
+    if not os.path.isdir(f"sherpa_prior_{ENE}"): raise SystemExit(f"unknown ENERGY={ENE}")
+    _EMAP[ENE]=(ENE,'13.6TeV_IncPS','13p6TeV') if ENE.startswith('13p6') else (ENE,'13TeV_IncPS','13TeV')
 _mtag,_qdir,_qtag=_EMAP[ENE]
 MOM=f"moments_{_mtag}"; CSV=f"{MOM}/DYMoments_{ACC_SLUG}.csv"; PRIOR=f"sherpa_prior_{_mtag}"
 PRIOR_LABEL=('POWHEG+Pythia8 prior' if 'pwg' in _mtag else ('LO MLM prior' if 'lomlm' in _mtag else 'Sherpa prior'))
-QT_M=f"/Users/user/Library/CloudStorage/Dropbox/DY_reweighting_data/wju/{_qdir}/qT_1D_Dist_NP_{_qtag}_IncPS_varmT.m"
+QT_M=os.environ.get('QT_M') or f"/Users/user/Library/CloudStorage/Dropbox/DY_reweighting_data/wju/{_qdir}/qT_1D_Dist_NP_{_qtag}_IncPS_varmT.m"
 print(f"  ENERGY={ENE}  prior={PRIOR}  MOM={MOM}")
 names=(json.load(open(SRC)).get('selected_moments') or []); print(f"  {len(names)} moments from {SRC}")
 def fampow(s): f,k=s.split('^'); return (f,int(k))

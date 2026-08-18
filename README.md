@@ -193,3 +193,27 @@ See [`CITATION.cff`](CITATION.cff). Please cite the paper.
 ## License
 
 BSD-3-Clause — see [`LICENSE`](LICENSE).
+
+## Fit-health gate and the conditioning fallback
+
+Every fit is checked against three prior-universal health criteria before export:
+`max|lambda| < 30`, `|log_norm_shift| < 5`, and per-scheme `|dC| < 0.5`
+(`fit_health.py`, exit-code style). A fit that fails is NOT shipped: the moment
+selection is rebuilt under a joint-conditioning constraint and refit until healthy.
+
+Why: per-moment screens cannot see joint degeneracy. A rank-deficient moment set
+gives the dual a flat valley -- the optimizer parks huge cancelling multipliers there
+that pass stationarity, N_eff, closure and held-out validation, yet detonate on
+extreme-feature events (per-scheme normalizations shift by e^50-e^100). Two tools
+implement the fallback:
+
+- `rank_prune.py PRIOR WINNER.json OUT.json TOL` -- greedy conditioning prune of an
+  existing set (keeps the earlier moment of each degenerate family);
+- `grow_select.py PRIOR OUT.json TOL POOL1.json [POOL2.json ...]` -- grows a set from
+  the full screened candidate pool under the same admission test (preferred: reaches
+  independent moments the pruned ordering starves).
+
+Loop either one over a tol ladder (e.g. 0.25, 0.35, 0.45, ...) with `fit_health.py`
+as the stop condition. On the POWHEG Born 10M prior this converges at tol=0.35 with
+22 moments: max|lambda|=0.43, dC in [-0.03,+0.16], out-of-sample qT 1.36% / aco 1.77%.
+The Sherpa fits pass the gate as delivered; the fallback never fires for them.

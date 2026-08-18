@@ -14,7 +14,10 @@ NEV=int(os.environ.get('NEV','50000000')); FIT=int(os.environ.get('FIT_NEV','200
 B_=int(os.environ.get('BATCH','2000000')); FRAC=float(os.environ.get('FRAC','0.5'))
 SIGREL=float(os.environ.get('SIG_FLOOR_REL','0.005')); MAXDROP=int(os.environ.get('MAXDROP','15'))
 ACC="N4LL'+N3LO"; ACC_SLUG="N4LLp+N3LO"
-ENE=os.environ.get('ENERGY','13TeV'); _M={'13TeV':'13TeV','13p6TeV':'13p6TeV','13TeV_v2':'13TeV_v2','13p6TeV_v2':'13p6TeV_v2','13TeV_m':'13TeV_m','13TeV_py':'13TeV_py','13TeV_pwg':'13TeV_pwg','13TeV_pwg10M':'13TeV_pwg10M','13TeV_pwg10M_M0505':'13TeV_pwg10M_M0505','13TeV_v3_M0505':'13TeV_v3_M0505','13TeV_pwg10M_M051':'13TeV_pwg10M_M051','13TeV_v3_M051':'13TeV_v3_M051','13TeV_pwg10M_M105':'13TeV_pwg10M_M105','13TeV_v3_M105':'13TeV_v3_M105','13TeV_pwg10M_M12':'13TeV_pwg10M_M12','13TeV_v3_M12':'13TeV_v3_M12','13TeV_pwg10M_M21':'13TeV_pwg10M_M21','13TeV_v3_M21':'13TeV_v3_M21','13TeV_pwg10M_M22':'13TeV_pwg10M_M22','13TeV_v3_M22':'13TeV_v3_M22','13TeV_lomlm':'13TeV_lomlm','13TeV_v3':'13TeV_v3'}[ENE]
+ENE=os.environ.get('ENERGY','13TeV'); _M={'13TeV':'13TeV','13p6TeV':'13p6TeV','13TeV_v2':'13TeV_v2','13p6TeV_v2':'13p6TeV_v2','13TeV_m':'13TeV_m','13TeV_py':'13TeV_py','13TeV_pwg':'13TeV_pwg','13TeV_pwg10M':'13TeV_pwg10M','13TeV_pwg10M_M0505':'13TeV_pwg10M_M0505','13TeV_v3_M0505':'13TeV_v3_M0505','13TeV_pwg10M_M051':'13TeV_pwg10M_M051','13TeV_v3_M051':'13TeV_v3_M051','13TeV_pwg10M_M105':'13TeV_pwg10M_M105','13TeV_v3_M105':'13TeV_v3_M105','13TeV_pwg10M_M12':'13TeV_pwg10M_M12','13TeV_v3_M12':'13TeV_v3_M12','13TeV_pwg10M_M21':'13TeV_pwg10M_M21','13TeV_v3_M21':'13TeV_v3_M21','13TeV_pwg10M_M22':'13TeV_pwg10M_M22','13TeV_v3_M22':'13TeV_v3_M22','13TeV_lomlm':'13TeV_lomlm','13TeV_v3':'13TeV_v3'}
+# any tag with a prior directory on disk is accepted; typos still fail loudly
+if ENE not in _M and os.path.isdir(f"sherpa_prior_{ENE}"): _M[ENE]=ENE
+_M=_M[ENE]
 MOM=f"moments_{_M}"; PRIOR=f"sherpa_prior_{_M}"; CSV=f"{MOM}/DYMoments_{ACC_SLUG}.csv"
 print(f"  ENERGY={ENE} prior={PRIOR} MOM={MOM}")
 names=json.load(open(SRC)).get('selected_moments') or []

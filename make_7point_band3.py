@@ -1,16 +1,28 @@
 """7-point prior-scale variations for all three constrained observables, gated blend.
 
-Per mu_R/mu_F point V the event weight is
+beta = smootherstep gate over qT in [GATE_LO, GATE_HI]. Two recipes, selected by MODE:
+
+MODE=tail (default) -- the delivered recipe, the w0_tail branch of apply_lambdas
+
+    w_V = beta * w_rew(central) + (1 - beta) * w0_V
+
+  The varied prior is NOT reweighted. It enters only through the tail branch of the
+  hand-off, so below the gate all seven points ARE the central reweighted sample and the
+  spread is identically zero there, while above the gate the weights are the bare
+  generator variation. The uncertainty in the bulk is the theory band (the 28 schemes,
+  which revert to the central prior in the tail), so the two families tile the phase
+  space without double counting and no per-variation fit is needed.
+
+MODE=fit -- cross-check
 
     w_V = beta * [ w0_V * exp(sum_k lambda_V[k] phi_k - C_V) ] + (1 - beta) * w0_V
 
-beta = smootherstep gate over qT in [GATE_LO, GATE_HI]. Below the gate the varied priors
-are reweighted onto the theory target and collapse; above it the weights reduce to the bare
-prior variation, so the spread there is the generator's own muR/muF uncertainty.
+  Each varied prior is separately fit to the theory target; below the gate the seven
+  points collapse only up to the residual of the finite moment basis.
 
 Three observables: qT, rT = qT/m_ll, and the acoplanarity d = pi - dphi_ll.
 
-Usage:  ENERGY=13TeV_v3 VARDIR=variations python make_7point_band3.py [out.pdf]
+Usage:  ENERGY=13TeV_v3 VARDIR=variations [MODE=tail] python make_7point_band3.py [out.pdf]
 """
 import os, sys, json
 for v in ("OMP_NUM_THREADS","OPENBLAS_NUM_THREADS","MKL_NUM_THREADS"): os.environ.setdefault(v,"4")
@@ -27,7 +39,9 @@ CEN   = f"{MOM}/lambda_export.json"
 _main = f"{MOM}/lambda_export_prior_variations_MAIN.json"
 VARJ  = os.environ.get("VARJSON", _main if os.path.exists(_main) else f"{MOM}/lambda_export_prior_variations.json")
 VARD  = os.environ.get("VARDIR", "variations")
-OUT   = sys.argv[1] if len(sys.argv) > 1 else "fig_7point_band3.pdf"
+MODE  = os.environ.get("MODE", "tail").lower()
+if MODE not in ("tail", "fit"): raise SystemExit(f"MODE must be 'tail' or 'fit', got {MODE!r}")
+OUT   = sys.argv[1] if len(sys.argv) > 1 else f"fig_7point_band3_{MODE}.pdf"
 
 # Rivet-like house style (same as the End Matter figure)
 plt.rcParams.update({
@@ -57,8 +71,11 @@ def hu(x, w, E):
     h,_ = np.histogram(x, bins=E, weights=w); s = h/np.diff(E)
     return s/np.sum(s*np.diff(E))
 
-CACHE = OUT.replace(".pdf", "_hists.npz")
-schemes = list(json.load(open(VARJ))["schemes"])
+CACHE = OUT.replace(".pdf", f"_{MODE}_hists.npz")
+if MODE == "tail" and not os.path.exists(VARJ):   # tail mode needs no per-variation fit
+    schemes = sorted(f[:-7] for f in os.listdir(f"{PRIOR}/{VARD}") if f.endswith(".csv.gz"))
+else:
+    schemes = list(json.load(open(VARJ))["schemes"])
 if os.path.exists(CACHE) and not int(os.environ.get("NOCACHE", "0")):
     _z = np.load(CACHE, allow_pickle=True)
     CEN_H = {k: _z[f"cen_{k}"] for k,_,_,_,_ in OBS}
@@ -70,7 +87,10 @@ else:
     WV = []
     for V in schemes:
         wv = pd.read_csv(f"{PRIOR}/{VARD}/{V}.csv.gz", header=None).values.ravel()[1:][:N].astype(float)
-        w  = reweight_scheme(wv, qT, mm, dd, scheme=V, jpath=VARJ, gate=True)
+        if MODE == "tail":   # varied prior enters only through the tail branch, never reweighted
+            w = reweight(w0, qT, mm, dd, jpath=CEN, gate=True, w0_tail=wv)
+        else:                # each varied prior carries its own fitted multipliers
+            w = reweight_scheme(wv, qT, mm, dd, scheme=V, jpath=VARJ, gate=True)
         print(f"  {V:22s} N_eff={100*w.sum()**2/(N*(w*w).sum()):7.3f}%", flush=True)
         WV.append(w)
     CEN_H = {k: hu(x, wc, E) for k,x,E,_,_ in OBS}
@@ -106,8 +126,10 @@ for i,(key, x, E, xlabel, logx) in enumerate(OBS):
     plt.setp(ax.get_xticklabels(), visible=False)
     if i == 0:
         ax.legend(loc="lower left", fontsize=8, ncol=2, handlelength=1.4)
+        _how = ("varied prior in the tail branch only" if MODE == "tail"
+                else "each varied prior separately fit")
         ax.set_title(rf"7-point prior scales, gated hand-off {GLO:.0f}–{GHI:.0f} GeV "
-                     rf"({ENE}, {N/1e6:.1f}M)", fontsize=10.5, pad=6)
+                     rf"({ENE}, {N/1e6:.1f}M)" "\n" rf"{_how}", fontsize=10.5, pad=6)
     ar.axhline(1, color="k", lw=0.7)
     ar.stairs(hi/cen, E, baseline=lo/cen, fill=True, color="0.6", alpha=0.30, lw=0)
     for j,V in enumerate(schemes):
