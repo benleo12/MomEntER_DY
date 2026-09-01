@@ -1,0 +1,49 @@
+! POWHEG-BOX-V1 / Z  --  ATLAS MC15.361106 (PowhegPythia8EvtGen_AZNLOCTEQ6L1_Zee) configuration,
+! reproduced from athena PowhegControl processes/powheg/Z.py + parameters/powheg_atlas_common.py,
+! with ONE physics change: mass_low 60 -> 35 so the m_ll > 40 analysis cut is not a generator edge.
+!
+! Run with manyseeds (one grid + one LHE per seed, exactly how PowhegControl runs V1 processes):
+!     echo <n> | ./pwhg_main            -> pwgevents-<nnnn>.lhe
+! where <n> indexes a line of pwgseeds.dat.
+
+numevts 400000          ! per seed; 128 seeds x 400k = 51.2M
+ih1 1
+ih2 1
+ebeam1 6500d0
+ebeam2 6500d0
+lhans1 10800            ! CT10 (ATLAS MC15 Powheg Z default; 361106 description says "AZNLO CT10")
+lhans2 10800
+ndns1 131
+ndns2 131
+
+vdecaymode 1            ! Z -> e+ e-   (361106 is Zee)
+running_width 1         ! set in the 361106 job options
+ptsqmin 4.0             ! set in the 361106 job options ("needed for AZNLO tune")
+mass_low 35             ! *** ONLY CHANGE ***  ATLAS default = 60.0
+mass_high 13000d0       ! ATLAS default = 2 * beam energy
+withnegweights 1        ! Chris's CSVs carry +-1941.85 -> negative weights were kept
+
+! ATLAS electroweak inputs (powheg_atlas_common.py)
+Zmass 91.1876
+Zwidth 2.4952
+Wmass 80.399
+Wwidth 2.085
+sthw2 0.23113
+alphaem 0.00781653039
+
+! integration / upper-bound settings = PowhegControl Z.py defaults
+ncall1 40000
+itmx1 5
+ncall2 70000
+itmx2 2
+foldcsi 5
+foldy 2
+foldphi 2
+nubound 10000
+xupbound 2d0
+icsimax 1
+iymax 1
+use-old-grid 1
+use-old-ubound 1
+manyseeds 1
+testplots 0

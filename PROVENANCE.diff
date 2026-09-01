@@ -1,0 +1,50 @@
+# Release provenance: this code is the production pipeline (dyfit/ps, fingerprint CODE_MD5_v5.txt +
+# validate_shipped_weights.py) with EXACTLY the following cosmetic diffs: three dead local-path
+# fallbacks removed. No physics line differs. Production hashes:
+#   20d160af660b44acdfa4c70beb3be3ba  optimizer_DY_unc.py
+#   a93eed87c3ac208161b1483a2ebbba8e  select_stable.py
+#   e6999a096201056218b6c76f1e9e2c2d  final_plots_pro.py
+#   b01333ba81ec690b3ba2f76f2aadd399  admit_prune.py
+#   e81d94368f4d8f76356f3e287c8420be  run_pipeline.sh
+#   26c3a6dab6b6a2e5b5e03be2d7315575  build_tau_sets.py
+#   b4a48f169637e52bb5734fec9e02ca48  fit_health_v2.py
+#   e00c88a94de73e894a441c1c65a84113  health_shrink.py
+#   ebf3886e645f37049800b6c6f3250082  grow_select.py
+#   9a2321daa5f2496ca5966975df7b6f14  check_smallqt.py
+#   27fc6fa3496d8c8a098ec488d6d58d98  apply_lambdas.py
+
+--- production/final_plots_pro.py	2026-09-01 15:55:33
++++ release/final_plots_pro.py	2026-09-01 15:55:32
+@@ -30,8 +30,7 @@
+ _QT_NAME = f"qT_1D_Dist_NP_{_qtag}_IncPS_varmT.m"
+ QT_M = os.environ.get('QT_M') or next(
+     (p for p in (f"wju_{_qdir}/{_QT_NAME}",
+-                 f"{os.path.dirname(os.path.abspath(__file__))}/wju_{_qdir}/{_QT_NAME}",
+-                 f"/Users/user/Library/CloudStorage/Dropbox/DY_reweighting_data/wju/{_qdir}/{_QT_NAME}")
++                 f"{os.path.dirname(os.path.abspath(__file__))}/wju_{_qdir}/{_QT_NAME}")
+      if os.path.exists(p)), f"wju_{_qdir}/{_QT_NAME}")
+ print(f"  ENERGY={ENE}  prior={PRIOR}  MOM={MOM}")
+ names=(json.load(open(SRC)).get('selected_moments') or []); print(f"  {len(names)} moments from {SRC}")
+--- production/validate_shipped_weights.py	2026-09-01 15:55:33
++++ release/validate_shipped_weights.py	2026-09-01 15:55:32
+@@ -14,8 +14,7 @@
+ _qdir = _qtag.replace('p','.') + '_IncPS'     # wju_13.6TeV_IncPS (directory)
+ _QT_NAME = f"qT_1D_Dist_NP_{_qtag}_IncPS_varmT.m"
+ QT_M = os.environ.get('QT_M') or next((p for p in (f"wju_{_qdir}/{_QT_NAME}",
+-        f"{os.path.dirname(os.path.abspath(__file__))}/wju_{_qdir}/{_QT_NAME}",
+-        f"/Users/user/Library/CloudStorage/Dropbox/DY_reweighting_data/wju/{_qdir}/{_QT_NAME}") if os.path.exists(p)), None)
++        f"{os.path.dirname(os.path.abspath(__file__))}/wju_{_qdir}/{_QT_NAME}") if os.path.exists(p)), None)
+ if QT_M is None: sys.exit(f"validate: no qT theory file found for {E} (set QT_M=...)")
+ ACC = "N4LL'+N3LO"
+ 
+--- production/optimizer_DY_unc.py	2026-09-01 15:55:34
++++ release/optimizer_DY_unc.py	2026-09-01 15:55:32
+@@ -90,7 +90,7 @@
+                          "'plot': replot from saved lambdas (no Newton solve).")
+ 
+     # Data paths
+-    p.add_argument("--base_dir", default="/Users/user/Library/CloudStorage/Dropbox/LogMoments/LogdPhipT/ps")
++    p.add_argument("--base_dir", default=".")
+     p.add_argument("--prior_dir", default=None)
+     p.add_argument("--mom_dir", default=None)
+     p.add_argument("--accs", nargs="+", default=["N2LL'+NNLO"])

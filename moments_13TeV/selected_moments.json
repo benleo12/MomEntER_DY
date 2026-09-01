@@ -1,0 +1,70 @@
+{
+  "selected_moments": [
+    "const^0×dphi^1",
+    "rt^1×const^0",
+    "const^0×lndphi^1",
+    "lnrt^1×const^0",
+    "const^0×dphi^2",
+    "const^0×lndphi^2",
+    "lnrt^1×dphi^1",
+    "lnrt^1×dphi^2",
+    "lnrt^2×dphi^1",
+    "rt^1*lnrt^2×const^0",
+    "const^0×dphi^1*lndphi^3",
+    "lnrt^2×dphi^2",
+    "rt^1*lnrt^3×const^0",
+    "rt^1×lndphi^3",
+    "lnrt^3×dphi^2",
+    "lnrt^4×dphi^1",
+    "lnrt^4×dphi^2"
+  ],
+  "n_selected": 17,
+  "source": "stable @51M subset of moments_13TeV_q30/stable_WINNER_H.json (auto prune)",
+  "FRAC": 0.5,
+  "energy": "13TeV_q30",
+  "provenance": {
+    "NEV": 51200000,
+    "FIT_NEV": 5000000,
+    "BATCH": 2000000,
+    "FRAC": 0.5,
+    "MIN_EFF": 1000000,
+    "MAXDROP": 15,
+    "SIG_MODE": "statscale",
+    "SIG_FLOOR_REL": 0.005,
+    "TARGET_SCHEME": "",
+    "DROP_PER_ROUND": 5,
+    "MAX_STEPS": 2000,
+    "prior": "sherpa_prior_13TeV_q30",
+    "targets": "moments_13TeV_q30/DYMoments_N4LLp+N3LO.csv",
+    "candidate": "moments_13TeV_q30/stable_WINNER_H.json",
+    "K_in": 17,
+    "prior_neff": 5957859.695031321,
+    "fit_subsample": {
+      "n_random": 5000000,
+      "n_tail": 2561,
+      "q": 1e-05
+    },
+    "code_md5": "a93eed87c3ac",
+    "history": [
+      {
+        "iter": 0,
+        "K": 17,
+        "neff": 6034524.81108011,
+        "max_logit": 0.40716760687725584,
+        "rt": 5.017050006987901,
+        "d": 1.658052653589793,
+        "dropped": []
+      },
+      {
+        "iter": 0,
+        "K": 17,
+        "hess": {
+          "hess_eig_min": 0.0009983254061105185,
+          "hess_eig_max": 6.839726049513977,
+          "hess_diag_min": 9.67693926692683e-06,
+          "C": -0.04860744207413248
+        }
+      }
+    ]
+  }
+}

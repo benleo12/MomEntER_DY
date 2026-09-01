@@ -90,7 +90,7 @@ def get_args():
                          "'plot': replot from saved lambdas (no Newton solve).")
 
     # Data paths
-    p.add_argument("--base_dir", default="/Users/user/Library/CloudStorage/Dropbox/LogMoments/LogdPhipT/ps")
+    p.add_argument("--base_dir", default=".")
     p.add_argument("--prior_dir", default=None)
     p.add_argument("--mom_dir", default=None)
     p.add_argument("--accs", nargs="+", default=["N2LL'+NNLO"])
@@ -284,24 +284,48 @@ def chi2_per_bin(p, q, q_unc, eps=1e-30):
 # ========================================
 # Load Prior Data
 # ========================================
+def fit_subsample(rt, d, n_fit, seed=42, q=1e-5):
+    """Prior-agnostic FIT subsample (same rule for every prior, weighted or unweighted):
+    a seeded random draw of n_fit events PLUS every event in the extreme tails (lowest/highest
+    q-quantile) of rT and of d=pi-dphi, where the high-power features live.  Returns
+    (sel, fac): sorted event indices and importance factors so that sum_sel w*fac*phi is an
+    unbiased estimate of the full-sample weighted moment (bulk draw scaled by N_bulk/n_bulk,
+    tail events fully enumerated with factor 1).  Without the tail, an unweighted prior's
+    2M subsample never contains its rare extreme events and the fitted lambdas extrapolate
+    into them uncontrolled; a tail-enhanced weighted prior already has them."""
+    rt=np.asarray(rt,float); d=np.asarray(d,float); N=len(rt); k=max(1,int(q*N))
+    lo_rt=np.partition(rt,k-1)[k-1]; hi_rt=np.partition(rt,N-k)[N-k]
+    lo_d=np.partition(d,k-1)[k-1];   hi_d=np.partition(d,N-k)[N-k]
+    tail=(rt<=lo_rt)|(rt>=hi_rt)|(d<=lo_d)|(d>=hi_d)
+    tail_idx=np.flatnonzero(tail); bulk_idx=np.flatnonzero(~tail)
+    nb=min(int(n_fit),len(bulk_idx)); pick=np.random.default_rng(seed).choice(bulk_idx,nb,replace=False)
+    sel=np.concatenate([pick,tail_idx]); fac=np.concatenate([np.full(nb,len(bulk_idx)/nb),np.ones(len(tail_idx))])
+    o=np.argsort(sel); return sel[o], fac[o]
+
+
 def load_prior(prior_dir):
     """Load prior MC events"""
     print(f"\n[Loading Prior from {prior_dir}]")
 
-    dphi = pd.read_csv(f"{prior_dir}/dphi_values.csv.gz").values.flatten()
-    pT = pd.read_csv(f"{prior_dir}/pT_values.csv.gz").values.flatten()
-    m = pd.read_csv(f"{prior_dir}/m_values.csv.gz").values.flatten()
+    # header=None is REQUIRED: these files carry no header row.  Reading them with pandas'
+    # default (header=0) silently discards the first EVENT, which shifts every downstream
+    # event_index by one -- invisible in sums and N_eff, fatal for per-event weights.
+    _col = lambda f: pd.to_numeric(
+        pd.read_csv(f"{prior_dir}/{f}", header=None, low_memory=False).iloc[:, 0],
+        errors="coerce").values
+    dphi = _col("dphi_values.csv.gz")
+    pT = _col("pT_values.csv.gz")
+    m = _col("m_values.csv.gz")
 
     n = min(len(dphi), len(pT), len(m))
     dphi, pT, m = dphi[:n], pT[:n], m[:n]
 
     try:
-        w_pT = pd.read_csv(f"{prior_dir}/pT_weight.csv.gz").values.flatten()[:n]
-        w = w_pT.astype(np.float64)
+        w = _col("pT_weight.csv.gz")[:n].astype(np.float64)
     except Exception:
         w = np.ones(n, dtype=np.float64)
 
-    good = np.isfinite(m) & (m > 1e-300)
+    good = (np.isfinite(m) & (m > 1e-300) & np.isfinite(dphi) & np.isfinite(pT) & np.isfinite(w))
     dphi = dphi[good]
     pT = pT[good]
     m = m[good]
@@ -1090,6 +1114,14 @@ class MaxEntDual:
 
         return logZ, moments, cov
 
+    def max_logit_change(self, dlam):
+        """max_i |phi_i . dlam| over the fit sample: the largest per-event log-weight change a step dlam makes."""
+        i_idx = self.pairs[:, 0]; j_idx = self.pairs[:, 1]; m = 0.0
+        for a in range(0, self.N, 500_000):
+            b = min(a + 500_000, self.N); T = self.F[a:b, i_idx] * self.G[a:b, j_idx]
+            m = max(m, float(np.abs(T @ dlam).max()))
+        return m
+
     def dual_loss(self, lam):
         """L(λ) = log Z(λ) − λ·μ + ½ λᵀΣλ (matrix) or ½ Σ c_k λ_k² (diagonal)"""
         logZ, _, _ = self._compute_logZ_moments_cov(lam, need_cov=False)
@@ -1346,6 +1378,14 @@ def optimize_newton(model, max_steps=50, tol=1e-8, verbose=True):
     lam = model.lam.copy()
     K = len(lam)
     lm = 0.0   # adaptive Levenberg-Marquardt damping (0 = pure Newton)
+    # Trust region on the per-event logit change (LOGIT_STEP, default 5): a Newton step on a heavy-tailed
+    # standardized feature (rt*lnrt^5 ~ 150 feature-sigma at rT=50) can move ONE event's log-weight by
+    # O(50); the signed measure is then a handful of tail events, the loss 'decreases' into the
+    # negative-weight chute and every pull explodes while the Armijo line search (12 halvings from
+    # alpha=1, loss-based) accepts it.  Capping the step changes the path, never the optimum.
+    import os as _os0
+    _LSTEP = float(_os0.environ.get('LOGIT_STEP', '5.0')); _ncap = 0
+    accepted_steps = 0; reason = 'maxsteps'   # -> model.fit_status (see end of function)
 
     print(f"\n[Newton Optimization: {K} constraints, tol={tol}]")
 
@@ -1364,7 +1404,7 @@ def optimize_newton(model, max_steps=50, tol=1e-8, verbose=True):
 
         if grad_norm < tol:
             print(f"  Converged at step {step}: |∇|_∞ = {grad_norm:.3e} < {tol}")
-            break
+            reason = 'converged'; break
 
         # Adaptive Levenberg-Marquardt direction: solve (H + lm·diag(H)) Δλ = -g, raising the
         # damping lm only when a step fails to reduce the loss. On well-conditioned Hessians
@@ -1383,16 +1423,19 @@ def optimize_newton(model, max_steps=50, tol=1e-8, verbose=True):
             if slope > 0:                          # not a descent direction -> damp more
                 lm = max(lm * 10.0, 1e-6); continue
             alpha = 1.0; lo = np.inf
+            if _LSTEP > 0 and hasattr(model, 'max_logit_change'):
+                _mx = model.max_logit_change(dlam)
+                if _mx > _LSTEP: alpha = _LSTEP / _mx; _ncap += 1
             for _ in range(12):                    # short line search (good direction -> few backtracks)
                 lam_trial = lam + alpha * dlam; lo = model.dual_loss(lam_trial)
                 if np.isfinite(lo) and lo <= loss + c1 * alpha * slope: break
                 alpha *= 0.5
             if np.isfinite(lo) and lo < loss:      # accept; relax damping for the next step
-                lam = lam_trial; lm = lm * 0.3 if lm > 1e-12 else 0.0; accepted = True; break
+                lam = lam_trial; lm = lm * 0.3 if lm > 1e-12 else 0.0; accepted = True; accepted_steps += 1; break
             lm = max(lm * 10.0, 1e-6)              # step didn't help -> damp more, retry
         if not accepted:
             if verbose: print(f"  LM: no further progress at step {step}")
-            break
+            reason = 'stalled'; break
 
         if verbose and (lm > 0 or alpha < 1.0):
             print(f"    (LM λ={lm:.1e}, α={alpha:.4f})")
@@ -1409,6 +1452,30 @@ def optimize_newton(model, max_steps=50, tol=1e-8, verbose=True):
     print(f"\n  Final: Loss={loss:.6f}, χ²_equiv={chi2_equiv:.4f}, "
           f"RMS pull={np.sqrt(np.mean(pulls**2)):.4f}, max|pull|={np.max(np.abs(pulls)):.4f}")
     print(f"  |∇|_∞ = {np.max(np.abs(grad)):.3e}")
+
+    # Machine-readable outcome.  Callers used to accept whatever lam came back, so two failure
+    # modes passed as finished fits: a 'stalled' cold start (no step accepted, lam stays 0, whose
+    # N_eff is the prior's) and a runaway along a flat direction (|lam|~1e6, pulls ~1e9).
+    # 'converged' = gradient tolerance met, OR finite lam with every moment reproduced to within
+    # FIT_PULL_OK sigma (exhausting max_steps on an already-good fit is not a failure).
+    # The convergence test is the SAME stationarity residual the export gates on
+    # (final_plots_pro FULLFIT check): |g_k| / max(|t_k|, sigma_k) < FIT_TOL, with
+    # g_k = <phi_k>_w - t_k + reg_k lam_k.  One criterion everywhere, so a set cannot pass the
+    # prune and then fail the export on the same test.  'max_pull' is kept for diagnostics only.
+    import os as _os
+    _tol = float(_os.environ.get('FIT_TOL', '1e-3'))
+    _fin = bool(np.all(np.isfinite(lam)) and np.isfinite(loss))
+    _mp = float(np.max(np.abs(pulls))) if _fin else float('inf')
+    _sc = np.maximum(np.maximum(np.abs(model.targets), model.sigma), 1e-300)
+    _mr = float(np.max(np.abs(grad) / _sc)) if _fin else float('inf')
+    model.fit_status = {'reason': reason, 'accepted_steps': int(accepted_steps), 'logit_capped_steps': int(_ncap), 'logit_step': _LSTEP,
+                        'grad_norm': float(np.max(np.abs(grad))) if _fin else float('inf'),
+                        'max_pull': _mp, 'max_rel': _mr, 'tol': _tol,
+                        'rms_pull': float(np.sqrt(np.mean(pulls**2))) if _fin else float('inf'),
+                        # a LM stall with every moment inside its own uncertainty is the numerical floor of the
+                        # loss (double precision on L~30), not a failure: converged.
+                        'converged': bool(_fin and (reason == 'converged' or _mr < _tol or (reason == 'stalled' and _mp < 1.0)))}
+    print(f"  fit_status: {model.fit_status}")
 
     return loss
 

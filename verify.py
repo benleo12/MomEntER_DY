@@ -19,7 +19,7 @@ from apply_lambdas import reweight, schemes, _default
 
 def level1():
     ok = True
-    for energy in ("13TeV", "13p6TeV"):
+    for energy in ("13TeV", "13p6TeV", "13TeV_powheg"):
         d = json.load(open(_default(energy)))
         n = 100000
         rng = np.random.default_rng(0)
@@ -27,10 +27,13 @@ def level1():
         qT = rng.exponential(20, n); dphi = rng.uniform(1e-3, 3.0, n)
         w = reweight(w0, qT, m, dphi, energy=energy)
         finite = bool(np.all(np.isfinite(w)))
-        revert = bool(np.allclose(w[qT > 200], w0[qT > 200]))
+        hi = float(d["gating"]["window_GeV"][1])
+        gated = d["gating"].get("applied", True) and hi < 1e6
+        revert = bool(np.allclose(w[qT > hi], w0[qT > hi])) if gated else True
         ok &= finite and revert
-        print(f"[L1 {energy:8s}] moments={len(d['moments'])}  schemes={len(schemes(energy))}  "
-              f"finite={finite}  reverts_above_200={revert}")
+        tail = f"reverts_above_{hi:g}={revert}" if gated else "ungated (pure reweighting everywhere)"
+        print(f"[L1 {energy:12s}] moments={len(d['moments'])}  schemes={len(schemes(energy))}  "
+              f"finite={finite}  {tail}")
     print("L1:", "PASS" if ok else "FAIL")
     return ok
 

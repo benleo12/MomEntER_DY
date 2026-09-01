@@ -24,7 +24,14 @@ if ENE not in _EMAP:
 _mtag,_qdir,_qtag=_EMAP[ENE]
 MOM=f"moments_{_mtag}"; CSV=f"{MOM}/DYMoments_{ACC_SLUG}.csv"; PRIOR=f"sherpa_prior_{_mtag}"
 PRIOR_LABEL=('POWHEG+Pythia8 prior' if 'pwg' in _mtag else ('LO MLM prior' if 'lomlm' in _mtag else 'Sherpa prior'))
-QT_M=os.environ.get('QT_M') or f"/Users/user/Library/CloudStorage/Dropbox/DY_reweighting_data/wju/{_qdir}/qT_1D_Dist_NP_{_qtag}_IncPS_varmT.m"
+# Theory qT file. Resolve in order: explicit env, a copy staged next to the pipeline, then the
+# author's laptop path. A hard-coded home directory must never be the only option -- it made the
+# pT panel crash with "dist=None" on every machine but one.
+_QT_NAME = f"qT_1D_Dist_NP_{_qtag}_IncPS_varmT.m"
+QT_M = os.environ.get('QT_M') or next(
+    (p for p in (f"wju_{_qdir}/{_QT_NAME}",
+                 f"{os.path.dirname(os.path.abspath(__file__))}/wju_{_qdir}/{_QT_NAME}")
+     if os.path.exists(p)), f"wju_{_qdir}/{_QT_NAME}")
 print(f"  ENERGY={ENE}  prior={PRIOR}  MOM={MOM}")
 names=(json.load(open(SRC)).get('selected_moments') or []); print(f"  {len(names)} moments from {SRC}")
 def fampow(s): f,k=s.split('^'); return (f,int(k))
@@ -49,6 +56,13 @@ K=len(facs)
 p=o.load_prior(PRIOR); Nf=len(p['rT']); NEV=min(NEV,Nf); FIT=min(FIT,NEV); NEV_BAND=min(NEV_BAND,NEV)
 _ns=min(500000,Nf); rt_ref=p['rT'][:_ns].astype(float); d_ref=p['d'][:_ns].astype(float)  # PINNED std ref (original order, NEV-independent)
 idx=np.sort(np.random.default_rng(42).choice(Nf,NEV,replace=False))
+# UNGATED=1: the deliverable is w = w0*exp(logit - log_norm_shift) for EVERY event (no qT hand-off).
+# Used for NLO POWHEG priors, which have no multijet-merged tail worth protecting.  The gating
+# window is exported as [1e9,2e9] GeV so apply_lambdas.reweight() yields beta=1 everywhere unchanged.
+UNGATED=int(_os.environ.get('UNGATED','0')) if '_os' in dir() else int(__import__('os').environ.get('UNGATED','0'))
+_GATING_UNGATED={'applied':False,'variable':'qT [GeV]','window_GeV':[1e9,2e9],
+  'combine':'w = w0*exp(logit - log_norm_shift) for ALL events (no hand-off to the prior at high qT)',
+  'why':'NLO POWHEG (no multijet merging): the high-qT tail is shower-only, nothing there is more accurate than the reweighting target'}
 rt=p['rT'][idx].astype(float); d=p['d'][idx].astype(float); w=p['w'][idx].astype(float); pT=p['pT'][idx].astype(float); del p
 def facj1(f,k,x):
     if k==0: return np.ones(len(x))
@@ -68,9 +82,11 @@ def Fs(a,b): return Fc(a,b)/sF
 def Gs(a,b): return Gc(a,b)/sG
 # cache FIT feature matrices ONCE. Central fit on FIT; band(scheme) fits on a small
 # FIT_B subsample (band is approximate) -> cheap line-search, warm-started from central.
-Ff=Fs(0,FIT); Gf=Gs(0,FIT)
-FIT_B=min(int(os.environ.get('FIT_BAND','500000')),FIT); Ff_b=Fs(0,FIT_B); Gf_b=Gs(0,FIT_B)
-def fit_lam(T,Ff_,Gf_,w_,lam0=None,steps=200):
+SEL,FAC=o.fit_subsample(rt,d,FIT); WFIT=w[SEL]*FAC   # random FIT + extreme-feature tails (importance-weighted), same rule for every prior
+print(f"  fit subsample: {len(SEL):,} events = {int((FAC!=1).sum()):,} random + {int((FAC==1).sum()):,} tail")
+Ff=np.column_stack([side(fa,rt[SEL]) for fa,fb in facs])/sF; Gf=np.column_stack([side(fb,d[SEL]) for fa,fb in facs])/sG
+FIT_B=min(int(os.environ.get('FIT_BAND','500000')),FIT); Ff_b=Ff[:FIT_B]; Gf_b=Gf[:FIT_B]
+def fit_lam(T,Ff_,Gf_,w_,lam0=None,steps=int(os.environ.get('MAX_STEPS_FIT','300')),strict=False,tag='fit'):
     Ts=T/(sF*sG)
     with contextlib.redirect_stdout(io.StringIO()):
         m=o.MaxEntDual(Ff_,Gf_,pairs,Ts,w_,sigmas_target=list(Sig_scaled),
@@ -78,7 +94,21 @@ def fit_lam(T,Ff_,Gf_,w_,lam0=None,steps=200):
         if lam0 is not None: m.lam=lam0.copy()    # warm start (scheme targets ≈ central)
         o.optimize_newton(m,max_steps=steps,tol=1e-10,verbose=False)
     lam=m.lam.copy()
-    return lam if np.all(np.isfinite(lam)) else (lam0.copy() if lam0 is not None else np.zeros(K))
+    st=getattr(m,'fit_status',{'converged':True,'reason':'unknown','accepted_steps':-1,'max_pull':float('nan'),'max_rel':float('nan')})
+    if np.all(np.isfinite(lam)) and st['converged'] and (st['accepted_steps']!=0 or lam0 is not None or st['reason']=='converged'):
+        return lam
+    # scheme fits (warm-started, 80 steps) only feed the band: accept them at SCHEME_TOL (looser than
+    # the central FIT_TOL) rather than throwing away a 1e-3-level miss; anything worse falls back.
+    if (not strict) and np.all(np.isfinite(lam)) and st.get('max_rel',float('inf'))<float(os.environ.get('SCHEME_TOL','1e-2')):
+        return lam
+    # This used to return zeros (cold) or the central lambda (warm) SILENTLY, so a failed central fit
+    # plotted the prior as if it were the reweighted result (13.6 TeV S/N PROG, 2026-08-28).
+    msg=f"  *** {tag}: FIT NOT CONVERGED ({st['reason']}, accepted steps={st['accepted_steps']}, max resid/scale={st.get('max_rel',float('nan')):.3g}, max|pull|={st['max_pull']:.3g}, |lam|max={np.abs(lam).max() if np.all(np.isfinite(lam)) else float('inf'):.3g}) ***"
+    print(msg,flush=True)
+    if strict:
+        print("  refusing to plot/cache/export a non-converged central fit (rc=3)",flush=True); raise SystemExit(3)
+    print("      -> this scheme keeps the central lambda (contributes zero width to the band)",flush=True)
+    return lam0.copy() if lam0 is not None else np.zeros(K)
 def apply_many(lams,nev):
     """apply a LIST of λ's to first nev events in ONE feature pass (features built once
     per batch, reused for all λ). Returns list of signed-weight arrays."""
@@ -120,6 +150,13 @@ if SIG_MODE in ('stat','cov'):      # stat-only central penalty: scale systemati
     ssc_g={}              # per-moment noise — they are correlated shifts already propagated
     print("  SIG_MODE=stat (central penalty: stat only; scale unc -> band)")   # via the 28-scheme band.
 Sigr=np.array([ (sig_for(fa+fb) or 0.005*abs(Tc[k])) for k,(fa,fb) in enumerate(facs)])
+# Prior-side MC error of every moment (admit_prune.py, full sample) in quadrature: both statistical.
+_MC=json.load(open(f'{MOM}/prior_mc.json')) if os.path.exists(f'{MOM}/prior_mc.json') else {}
+_MCTAG=''; _PEN='theory-stat'
+if _MC:
+    _miss=[n for n in names if n not in _MC]; _smc=np.array([_MC.get(n,{}).get('sig_mc',0.0) for n in names])
+    Sigr=np.sqrt(Sigr**2+_smc**2); _MCTAG='_mc'; _PEN='theory-stat (+) prior-MC'
+    print(f"  penalty sigma = theory sigma (+) prior MC error ({len(names)-len(_miss)}/{len(names)} moments in prior_mc.json)"+(f'  !! MISSING: {_miss[:5]}' if _miss else ''))
 Sig_scaled=np.maximum(Sigr/(sF*sG),1e-12)
 COV_scaled=None
 if SIG_MODE=='cov':
@@ -156,6 +193,11 @@ class StreamDual:
             return np.inf,np.full(self.K,np.nan),(np.full((self.K,self.K),np.nan) if need_cov else None)
         mom=S1/S0; cov=(S2/S0-np.outer(mom,mom)) if need_cov else None
         return gmax+np.log(S0),mom,cov
+    def max_logit_change(self,dlam):
+        m=0.0
+        for a in range(0,self.N,B_):
+            b=min(a+B_,self.N); T=Fs(a,b)[:,ii]*Gs(a,b)[:,jj]; m=max(m,float(np.abs(T@dlam).max()))
+        return m
     def dual_loss(self,lam):
         lz,_,_=self._pass(lam,False)
         return lz-lam@self.targets+0.5*(self.reg_coef*lam*lam).sum()
@@ -167,7 +209,7 @@ print("  reweighting CENTRAL @%dM ..."%(NEV//1_000_000))
 # cache the expensive central fit (200-step Newton, deterministic) -> fast plot iteration
 import hashlib
 _TSTAG=('_'+_TS) if _TS else ''   # different TARGET_SCHEME -> different targets -> different cache file
-_LC=f"{MOM}/.lamc_{os.path.basename(SRC)}_{FIT}_{hashlib.md5(('|'.join(names)+SIG_MODE).encode()).hexdigest()[:8]}{_TSTAG}.npy"  # content+sigmode+target-keyed cache
+_LC=f"{MOM}/.lamc_{os.path.basename(SRC)}_{FIT}_{hashlib.md5(('|'.join(names)+SIG_MODE+_MCTAG).encode()).hexdigest()[:8]}{_TSTAG}_tf.npy"  # content+sigmode+target-keyed cache; _tf = tail-aware fit subsample
 # fingerprint of the TARGET VECTOR itself: a cache built for different targets must never
 # be reused silently (this once made 6 "correlated" fits return the uncorrelated lambdas).
 _TFP=hashlib.md5(np.ascontiguousarray(Tc,dtype=np.float64).tobytes()).hexdigest()[:12]
@@ -215,6 +257,18 @@ elif FULLFIT:
     if _WL and os.path.exists(_WL):
         _m.lam=np.array(json.load(open(_WL))['lambda_physical'],float)*(sF*sG)
         print(f"  warm start from {_WL}: |lam|max={np.abs(_m.lam).max():.4g}")
+    else:
+        # DEFAULT (every prior, no knob): the full-sample fit REFINES the validated subsample fit of the
+        # same set rather than restarting cold.  Degenerate moment sets have a flat valley of solutions;
+        # the subsample fit that passed validation sits at a benign point of it, a cold start can land on
+        # a huge-|lambda| member of the same valley (this is how the delivered Sherpa set was produced).
+        import glob as _g
+        _H=hashlib.md5(('|'.join(names)+SIG_MODE+_MCTAG).encode()).hexdigest()[:8]   # content key: same set under any filename
+        _cands=[f for f in _g.glob(f"{MOM}/.lamc_*_{FIT}_{_H}{_TSTAG}*.npy") if '_full' not in f and '_shift' not in f]
+        _cands=[f for f in _cands if not os.path.exists(f.replace('.npy','.tgt')) or open(f.replace('.npy','.tgt')).read().strip()==_TFP]
+        if _cands:
+            _BASE=sorted(_cands,key=os.path.getmtime)[-1]
+            _m.lam=np.load(_BASE).astype(float); print(f"  warm start from validated subsample fit {os.path.basename(_BASE)}: |lam_std|max={np.abs(_m.lam).max():.4g}")
     _CS=int(os.environ.get('CONT_STEPS','0'))
     _MS=int(os.environ.get('MAX_STEPS','60'))
     if _CS>1 and _TS and '_Tcen' in dir():
@@ -241,16 +295,25 @@ elif FULLFIT:
     # stationarity check: <g>_w must equal t - sigma^2 lambda. A silently non-converged fit
     # once exported lambdas with |lam|~2000 and 2000% moment error -- never export blind again.
     _lz,_mom,_=_m._pass(lam_c,False)
-    _res=np.abs(_mom-_m.targets+_m.reg_coef*lam_c)/np.maximum(np.abs(_m.targets),1e-30)
+    # g_k = <phi_k>_w - t_k + sigma_k^2 lam_k, normalised by max(|t_k|, sigma_k): a target that
+    # happens to sit near zero must not read as '16% off' when it is reproduced to a fraction of
+    # its own uncertainty.  The offenders are printed AND dumped so the pipeline can shrink the set.
+    _g=_mom-_m.targets+_m.reg_coef*lam_c
+    _res=np.abs(_g)/np.maximum(np.maximum(np.abs(_m.targets),_m.sigma),1e-300)
+    _resT=np.abs(_g)/np.maximum(np.abs(_m.targets),1e-300)
     _bad=float(_res.max())
-    print(f"  stationarity residual: median {np.median(_res):.3e}  max {_bad:.3e}  |lam|max={np.abs(lam_c).max():.4g}")
+    print(f"  stationarity residual: median {np.median(_res):.3e}  max {_bad:.3e}  (rel-to-|t| max {_resT.max():.3e})  |lam|max={np.abs(lam_c).max():.4g}")
+    _ord=[int(k) for k in np.argsort(-_res)[:5]]
+    for _k in _ord: print(f"     {names[_k]:34s} resid/scale={_res[_k]:.3e}  t={_m.targets[_k]:.4e}  sigma={_m.sigma[_k]:.2e}  lam={lam_c[_k]:.4g}")
     if _bad>float(os.environ.get('FIT_TOL','1e-3')):
         print(f"  *** NOT CONVERGED (max residual {_bad:.3e} > FIT_TOL) -- refusing to cache/export ***")
+        json.dump({'set':list(names),'worst':[names[_k] for _k in _ord],'resid':[float(_res[_k]) for _k in _ord],'max':_bad,
+                   'lam_max':float(np.abs(lam_c).max())},open(f"{MOM}/fullfit_unconverged.json",'w'),indent=1,ensure_ascii=False)
         if int(os.environ.get('ALLOW_UNCONVERGED','0'))==0: raise SystemExit(3)
     np.save(_LC,lam_c); open(_SC,'w').write(_TFP)
     print(f"  FULLFIT done in {(_t.time()-_t0)/60:.1f} min -> {_LC}")
 else:
-    lam_c=fit_lam(Tc_fit,Ff,Gf,w[:FIT]); np.save(_LC,lam_c); open(_SC,'w').write(_TFP); print(f"  fit + cached lam_c -> {_LC}")
+    lam_c=fit_lam(Tc_fit,Ff,Gf,WFIT,strict=True,tag='central'); np.save(_LC,lam_c); open(_SC,'w').write(_TFP); print(f"  fit + cached lam_c -> {_LC}")
 if int(os.environ.get('EXPORT','0')):
     # full-sample log-normalization shift C so that  w_rew = w0*exp(logit - C)  is already
     # correctly normalized (sum w_rew = sum w0) with NO global max and NO post-hoc rescale
@@ -259,24 +322,69 @@ if int(os.environ.get('EXPORT','0')):
     gmax=-np.inf
     for a in range(0,NEV,B_):
         b=min(a+B_,NEV); lg=(Fs(a,b)[:,ii]*Gs(a,b)[:,jj])@lam_c; gmax=max(gmax,float(lg.max()))
+    # HEALTH + CLOSURE accumulators ride along in this pass: no extra feature pass, no extra cost.
+    # The gated deliverable weight is  wg = BETA*w*exp(lg-C) + (1-BETA)*w = (S0/S1)*A + Bv  with
+    # A = BETA*w*exp(lg-gmax); S0/S1 is exp(gmax-C) written as a ratio of sums, so nothing overflows.
+    _glo=float(os.environ.get('GATE_LO',120)); _ghi=float(os.environ.get('GATE_HI',200))
+    _tz=np.clip((pT[:NEV]-_glo)/(_ghi-_glo),0,1); _BE=1.0-(6*_tz**5-15*_tz**4+10*_tz**3); _app=_BE>0
+    if UNGATED: _BE=np.ones(NEV); _app=_BE>0
     S1=0.0; S0=float(w[:NEV].sum())
+    _num=np.zeros(K); _sA=_sB=_sA2=_sAB=_sB2=0.0; _up=-np.inf; _dn=np.inf
     for a in range(0,NEV,B_):
-        b=min(a+B_,NEV); lg=(Fs(a,b)[:,ii]*Gs(a,b)[:,jj])@lam_c; S1+=float((w[a:b]*np.exp(lg-gmax)).sum())
+        b=min(a+B_,NEV); Phi=Fs(a,b)[:,ii]*Gs(a,b)[:,jj]; lg=Phi@lam_c
+        _e=np.exp(lg-gmax); _wr=w[a:b]*_e; S1+=float(_wr.sum()); _num+=_wr@Phi
+        _A=_BE[a:b]*_wr; _Bv=(1.0-_BE[a:b])*w[a:b]
+        _sA+=float(_A.sum()); _sB+=float(_Bv.sum()); _sA2+=float((_A*_A).sum())
+        _sAB+=float((_A*_Bv).sum()); _sB2+=float((_Bv*_Bv).sum())
+        _m=_app[a:b]
+        if _m.any(): _up=max(_up,float(lg[_m].max())); _dn=min(_dn,float(lg[_m].min()))
     C=float(gmax+np.log(S1/S0))
     print(f"  log_norm_shift C={C:.6f}")
+    # MEASURED closure of THIS fit on the FULL sample (in standardized units the ratio is identical
+    # to raw). The old code shipped a hardcoded sentence here; it was never a measurement.
+    _Ts=Tc/(sF*sG); _rel=np.abs(_num/S1-_Ts)/np.maximum(np.abs(_Ts),1e-30)*100
+    _k=S0/S1                                   # = exp(gmax-C), overflow-free
+    _S1g=_k*_sA+_sB; _S2g=_k*_k*_sA2+2*_k*_sAB+_sB2
+    _neff_g=float(_S1g*_S1g/_S2g) if _S2g>0 else 0.0
+    _neff_p=float(S0*S0/np.sum(w[:NEV]*w[:NEV]))
+    try:                                       # the floor select_stable.py certified for THIS set
+        _pv=(json.load(open(SRC)).get('provenance') or {})
+        _fromprov=bool(_pv) and ('prior_neff' in _pv or float(_pv.get('MIN_EFF') or 0)>0)
+        _floor=float(_pv.get('MIN_EFF') or 0) or float(_pv.get('FRAC',0.5))*float(_pv.get('prior_neff',_neff_p))
+        _nprov=int(_pv.get('NEV') or 0)
+    except Exception:
+        _fromprov=False; _floor=0.5*_neff_p; _nprov=0
+    if _fromprov and _nprov>0 and _nprov!=NEV: _floor*=NEV/_nprov   # floor certified on a different NEV
+    _health={'gate_lo':_glo,'gate_hi':_ghi,'n_events':int(NEV),
+      'neff_gated':_neff_g,'prior_neff':_neff_p,'stability_floor':float(_floor),
+      'floor_from_provenance':bool(_fromprov),'provenance_NEV':int(_nprov),
+      'closure_pct':{'median':float(np.median(_rel)),'mean':float(_rel.mean()),'max':float(_rel.max())},
+      'max_logit_minus_C_applied':float(_up-C),'min_logit_minus_C_applied':float(_dn-C),
+      'note':'MEASURED on all n_events with the exported lambda. neff_gated = N_eff of the GATED '
+             'deliverable weights, the same functional select_stable.py prunes on; stability_floor '
+             'is the winner set provenance floor (rescaled to n_events). closure_pct = per-moment '
+             '|<phi_k>_w/T_k - 1|. max/min(logit-C) are over events with beta(qT)>0.'}
+    print(f"  MEASURED closure: median={np.median(_rel):.3f}%  max={_rel.max():.3f}%   "
+          f"N_eff gated={100*_neff_g/NEV:.2f}% (floor {100*_floor/NEV:.2f}%, prior {100*_neff_p/NEV:.2f}%)")
+    print(f"  applied region: max(logit-C)={_up-C:+.3f}  min={_dn-C:+.3f}"
+          + ("" if _fromprov else "   [WARNING: no provenance on the set; floor is a GUESS]"))
     lam_phys=(lam_c/(sF*sG)).tolist()
     exp={'description':f'MaxEnt reweighting of {PRIOR} to Wan-Li N4LLp+N3LO. Per event, fully local: w_rew = w0 * exp( sum_k lambda_physical[k]*phi_k - log_norm_shift ). The shift already fixes the normalization (sum w_rew = sum w0); no global max or renormalization needed.',
-      'n_moments':K,'moments':names,'sig_mode':SIG_MODE,'lambda_physical':lam_phys,'log_norm_shift':C,
+      'n_moments':K,'moments':names,'sig_mode':SIG_MODE,'penalty_sigma':_PEN,'lambda_physical':lam_phys,'log_norm_shift':C,
       'feature_convention':{'phi_k':'product over the two parts of moment name "A×B" (A=rt-side, B=dphi-side)',
         'monomials':'rt^k=rt**k, dphi^k=dphi**k, lnrt^k=log(rt)**k, lndphi^k=log(dphi)**k, const^0=1; parts within a side joined by *',
         'vars':'rt=qT/m_ll, dphi=pi-Delta_phi_ll; clip log args at 1e-12'},
       'standardization_note':'lambda_physical already folds in the unit-std feature scaling; apply directly to raw monomials. (lambda_standardized + sF,sG given only for cross-check.)',
       'lambda_standardized':lam_c.tolist(),'sF':sF.tolist(),'sG':sG.tolist(),
-      'gating':{'variable':'qT [GeV]','full_reweight_below':120,'window_GeV':[120,200],'his_region_above':200,
+      'gating':(_GATING_UNGATED if UNGATED else {'variable':'qT [GeV]','full_reweight_below':120,'window_GeV':[120,200],'his_region_above':200,
         'beta(qT)':'b = 1 - (6 t^5 - 15 t^4 + 10 t^3),  t = clip((qT-120)/80, 0, 1)   [1 below 120, 0 above 200]',
         'combine':'w = b*w_rew + (1-b)*w0*s_i ;  w_rew = w0*exp(logit - log_norm_shift) ;  s_i = your event-level tail factor (s_i=1 => revert to prior)',
-        'why':'qT=200 GeV is the edge of the N4LLp+N3LO prediction; q0=120 is where its theory-stat reaches ~5% (~size of the correction). taper systematic = 0.21x theory band.'},
-      'closure':'reproduces the 52 N4LLp+N3LO moments to median 0.33% / max 4%; central N_eff=4.77%'}
+        'why':'qT=200 GeV is the edge of the N4LLp+N3LO prediction; q0=120 is where its theory-stat reaches ~5% (~size of the correction). taper systematic = 0.21x theory band.'}),
+      'health':_health,
+      'closure':(f'MEASURED on all {NEV:,} events with the lambdas in this file: the {K} moments of '
+                 f'this set are reproduced to median {np.median(_rel):.3f}% / max {_rel.max():.3f}%; '
+                 f'N_eff of the {"" if UNGATED else "gated "}deliverable = {100*_neff_g/NEV:.2f}% '
+                 f'(prior {100*_neff_p/NEV:.2f}%).')}
     json.dump(exp,open(f'{MOM}/lambda_export.json','w'),indent=1)
     print(f"  wrote {MOM}/lambda_export.json ({K} moments, log_norm_shift={C:.4f})"); sys.exit(0)
 vv=apply_many([lam_c],NEV)[0]
@@ -315,7 +423,7 @@ varkeys=varkeys[:int(_os.environ.get('SCHMAX','99'))]
 print(f"  propagating {len(varkeys)} scale schemes (linear response) ...")
 Tc_s=Tc/(sF*sG)
 with contextlib.redirect_stdout(io.StringIO()):
-    m_c=o.MaxEntDual(Ff,Gf,pairs,Tc_s,w[:FIT],sigmas_target=list(Sig_scaled),cov_target=COV_scaled if COV_scaled is not None else None); m_c.lam=lam_c.copy()
+    m_c=o.MaxEntDual(Ff,Gf,pairs,Tc_s,WFIT,sigmas_target=list(Sig_scaled),cov_target=COV_scaled if COV_scaled is not None else None); m_c.lam=lam_c.copy()
     _,_,H_c,_=m_c.dual_loss_grad_hess(lam_c)
 # H_c is symmetric PSD but VERY ill-conditioned (collinear moments, κ~1e17). A raw solve
 # amplifies the scale shift along near-null directions -> unphysical band. Use a truncated
@@ -344,7 +452,33 @@ if _os.environ.get('SCANRCOND'):
         D=np.vstack([dens(v,RT0) for v in vs]); bw=100*np.nanmedian((np.nanmax(D,0)-np.nanmin(D,0))/2/np.nanmean(D,0))
         print(f"  SCAN RCOND={rc:g}: keep {nk}/52  Neff[min/med]={np.nanmin(nn):.2f}/{np.nanmedian(nn):.2f}%  rT-band-med={bw:.2f}%")
     print("ALL DONE"); sys.exit(0)
-lam_sch=[lam_c+solve_lr(d,_pinv) for d in dmus]
+# SCHEME band: linear response about the central solution through the truncated pseudo-inverse (default;
+# consistent across priors: 2026-08-30 battery, rT 2.1-2.3%, dphi 0.9-1.8%, qT 1.8-2.0% vs theory 4.7/2.9/2.2%).
+# SCHEME_MODE=refit does a full warm-started refit per scheme instead: exact, but dominated by the sample's own
+# MC-noise regularisation (same rule: POWHEG dphi band 7.3%, Sherpa 13.6 TeV 0.98%) and, on heavy-tailed
+# features, by tail-event solutions.  The linear
+# response dlambda = H^-1 dmu is exact to first order in lambda but the weights are exp(dlambda.phi):
+# on heavy-tailed features a few extreme events receive e^(10..90) (measured 2026-08-30, POWHEG 24-moment
+# set: exact response p50 0.08 but max 89; RCOND 1e-3 truncation still max 39) and one event then IS the
+# scheme's distribution -- dphi band 12-17% against a 2.9% theory band.  A real refit of the penalised
+# dual (trust region, sigma penalty) cannot go there.  SCHEME_MODE=linear restores the old path.
+if _os.environ.get('SCHEME_MODE','linear')=='linear':
+    lam_sch=[lam_c+solve_lr(d,_pinv) for d in dmus]
+else:
+    print(f"  refitting {len(varkeys)} schemes (warm start from the central fit) ...",flush=True)
+    lam_sch=[fit_lam(sch_target(fo,res),Ff,Gf,WFIT,lam0=lam_c,tag=f'scheme {fo}|{res}') for (fo,res) in varkeys]
+    _nz=sum(1 for l in lam_sch if np.any(l!=lam_c)); print(f"  schemes refit: {_nz}/{len(lam_sch)} moved from the central lambda",flush=True)
+    # GUARD: a refit that has run into a tail-event solution (its reweighted N_eff on the fit sample collapses
+    # relative to the central fit) is not a scale variation of the same physics; replace it by the damped
+    # linear response about the central solution and say so.
+    _PHIf=Ff[:,ii]*Gf[:,jj]; _la=np.log(np.maximum(np.abs(WFIT),1e-300)); _sg=np.where(WFIT>=0,1.0,-1.0)
+    def _neff(l):
+        g=_la+_PHIf@l; e=_sg*np.exp(g-g.max()); return float(e.sum()**2/np.sum(e*e))
+    _nc=_neff(lam_c); _rep=[]
+    for _j,(fo,res) in enumerate(varkeys):
+        _ns=_neff(lam_sch[_j])
+        if not (_ns>=0.5*_nc): lam_sch[_j]=lam_c+solve_lr(dmus[_j],_pinv); _rep.append(f'{fo}|{res} (N_eff {_ns/_nc:.2f} of central)')
+    print(f"  scheme guard: {len(_rep)}/{len(varkeys)} refits replaced by the damped linear response"+(': '+'; '.join(_rep) if _rep else ''),flush=True)
 if int(_os.environ.get('EXPORT_VARS','0')):
     # export per-scheme lambdas + normalization shifts for ALL scale variations (+central),
     # one file keyed by scheme name. Same phi_k and gating as the central lambda_export.json.
@@ -370,13 +504,13 @@ if int(_os.environ.get('EXPORT_VARS','0')):
     schemes={labels[j]:{'group':groups[j],'log_norm_shift':float(Cs[j]),
                         'lambda_physical':(all_lams[j]/(sF*sG)).tolist()} for j in range(J)}
     out={'description':'Per-scheme MaxEnt reweighting (central + Wan-Li scale/NP variations). For scheme S, per event: w_rew = w0*exp(sum_k schemes[S].lambda_physical[k]*phi_k - schemes[S].log_norm_shift); then the SAME gating as the central file. phi_k and gating identical to lambda_export.json. Variations are first-order (linear-response) propagations of Wan-Li 28-scheme moment shifts; their envelope = the theory scale-uncertainty band.',
-         'n_moments':K,'moments':names,'sig_mode':SIG_MODE,'n_schemes':J,'scheme_names':labels,
+         'n_moments':K,'moments':names,'sig_mode':SIG_MODE,'penalty_sigma':_PEN,'n_schemes':J,'scheme_names':labels,
          'feature_convention':{'phi_k':'product over the two parts of moment name "A×B"',
             'monomials':'rt^k=rt**k, dphi^k=dphi**k, lnrt^k=log(rt)**k, lndphi^k=log(dphi)**k, const^0=1; parts within a side joined by *',
             'vars':'rt=qT/m_ll, dphi=pi-Delta_phi_ll; clip log args at 1e-12'},
-         'gating':{'variable':'qT [GeV]','window_GeV':[120,200],
+         'gating':(_GATING_UNGATED if UNGATED else {'variable':'qT [GeV]','window_GeV':[120,200],
             'beta(qT)':'b = 1 - (6 t^5 - 15 t^4 + 10 t^3),  t = clip((qT-120)/80, 0, 1)',
-            'combine':'w = b*w_rew + (1-b)*w0*s_i  (above 200 -> prior, then your s_i)'},
+            'combine':'w = b*w_rew + (1-b)*w0*s_i  (above 200 -> prior, then your s_i)'}),
          'schemes':schemes}
     json.dump(out,open(f'{MOM}/lambda_export_variations.json','w'))
     print(f"  wrote {MOM}/lambda_export_variations.json ({J} schemes)")
@@ -439,7 +573,7 @@ def mc_band(x,de,cen_full,vvc):
 if int(_os.environ.get('VERIFY','0')):  # honesty check: linear-response vs real full Newton fit
     print("  VERIFY: linear-response vs full-Newton fit (reweighted density)")
     nv=min(int(_os.environ.get('VERIFY','0')),len(varkeys))
-    lf=[fit_lam(sch_target(*varkeys[n]),Ff,Gf,w[:FIT],lam0=lam_c,steps=80) for n in range(nv)]
+    lf=[fit_lam(sch_target(*varkeys[n]),Ff,Gf,WFIT,lam0=lam_c,steps=int(os.environ.get('MAX_STEPS_SCHEME','120')),tag=f'scheme{n}') for n in range(nv)]
     av=apply_many([x for n in range(nv) for x in (lam_sch[n],lf[n])],NEV_BAND)
     for n in range(nv):
         for tagv,ev,xv in [('rT',RT,rt),('pT',PT,pT)]:
@@ -559,6 +693,13 @@ if int(os.environ.get('GATE','0')):
         out=f"{MOM}/PAPER_GATE_{tag}.png"; fig.savefig(out,dpi=150,bbox_inches='tight'); plt.close(fig); print(f"  wrote {out}")
     sys.exit(0)
 # ---- shower (prior) variation envelope: per-variation lambda applied to per-variation weights ----
+elif os.environ.get('WRITE_WEIGHTS'):
+    # ===== UNGATED per-event weights: w = w0*exp(logit-C) on every event, mean-1 normalized like the gated branch =====
+    outp=os.environ['WRITE_WEIGHTS']; scale=w[:NEV].sum()/vv[:NEV].sum()
+    np.savez_compressed(outp,weights=(vv[:NEV]*scale).astype(np.float32),event_index=idx.astype(np.int64))
+    print(f"  wrote {outp}.npz: {NEV} per-event UNGATED weights (float32, mean-1 normalized) + event_index into the prior")
+    print(f"  prior order: NEV={NEV} of {Nf} total; weights[i] <-> prior event event_index[i]")
+    sys.exit(0)
 PVJ=f"{MOM}/lambda_export_prior_variations.json"; W_PVAR=[]
 if os.path.exists(PVJ) and os.path.isdir(f"{PRIOR}/variations") and int(os.environ.get('SHOWER_VARS','1')):
     import pandas as _pd, time as _tt; _t0=_tt.time()
@@ -642,5 +783,7 @@ for tag,xl,e,dist,x,logx in [('rT',r'$r_T=p_T/m_{\ell\ell}$',RT,td['rTDist'],rt,
     TR={'rT':2.0,'pT':120.0,'dphi':1e9}[tag]; ctr_=0.5*(e[:-1]+e[1:])
     trust=safe&(ctr_<TR)
     devT=[abs(rr[i]-1)*100 for i in range(len(cen)) if trust[i]]
-    print(f"  [{tag}] {out}: rew/thy median={np.median(dev):.2f}% worst={max(dev):.2f}% | trusted median={np.median(devT):.2f}% worst={max(devT):.2f}% | rew-band median={100*np.median((rhiT-rloT)[safe]/2):.2f}%")
+    devP=[abs(rp[i]-1)*100 for i in range(len(cen)) if trust[i]]   # the PRIOR on the same bins: a set must not be worse than this
+    print(f"  [{tag}] prior trusted median={np.median(devP):.2f}% worst={max(devP):.2f}%")
+    print(f"  [{tag}] {out}: rew/thy median={np.median(dev):.2f}% worst={max(dev):.2f}% | trusted median={np.median(devT):.2f}% worst={max(devT):.2f}% | rew-band median={100*np.median((rhiT-rloT)[safe]/2):.2f}% | thy-band median={100*np.median((sb_hi-sb_lo)[safe]/2):.2f}% (trusted: rew {100*np.median((rhiT-rloT)[trust]/2):.2f}% thy {100*np.median((sb_hi-sb_lo)[trust]/2):.2f}%)")
 print("DONE")

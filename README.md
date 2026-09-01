@@ -63,19 +63,7 @@ fit one multiplier set per variation (each on its own weight column) and take th
 envelope over the resulting samples: below the hand-off the theory targets pin the
 constrained spectra so the variations largely collapse, and what remains measures the
 finite-moment-basis residual, while above the hand-off the envelope supplies the
-generator uncertainty the reweighting itself cannot provide. The validation plotter
-draws this automatically as the "Shower unc." band when
-`products/<E>/lambda_export_prior_variations.json` and a `variations/` directory are
-present. `products/13TeV_powheg/` ships such a set.
-
-`make_7point_band.py` (one observable) and `make_7point_band3.py` (qT, rT and the
-acoplanarity together) are the reference implementations and draw the figure:
-
-```bash
-ENERGY=13TeV_v3 VARDIR=variations python make_7point_band.py fig_7point_band.pdf
-```
-
-Per variation V the event weight is the gated blend
+generator uncertainty the reweighting itself cannot provide. Per variation V the event weight is the gated blend
 
     w_V = beta * [ w0_V * exp(sum_k lambda_V[k] phi_k - C_V) ]  +  (1 - beta) * w0_V
 
@@ -106,19 +94,15 @@ band += [reweight(w0, qT, m_ll, dphi_ll, w0_tail=w0_V) for w0_V in seven_point] 
 The theory schemes revert to the central prior in the tail and the generator
 variations act only there, so the two tile the phase space without double counting.
 
-**Scale nuisance sets.** `products/<E>/lambda_export_nuisance.json` compresses the
-28 schemes into 3 orthogonal nuisance directions (99+ percent of the scale
-variance), each shipped as +-1 sigma multiplier sets, analogous to Hessian PDF
-error sets. Coverage is still quoted from the per-scale quadrature of the schemes, the nuisance sets
-provide the correlated parametrization downstream fits need. Rebuild with
-`make_nuisance_sets.py`.
-
-**Fit-sample recipe (default).** Candidate screening, stability pruning, and the
-out-of-sample model selection run on a fixed 2M-event subsample (cheap, and moment
-estimates are already far more precise than the theory targets there). The delivered
-multipliers are then refit on the FULL sample (`FULLFIT_EXPORT=1`, streaming fit), so
-the exported lambdas close the target moments on all events; a 2M-subsample fit
-reproduces them to about 1 percent in the multiplier norm.
+**Fit-sample recipe (default).** Statistical admission, stability pruning, and the
+out-of-sample model selection run on a fixed 5M-event subsample plus the extreme
+1e-5 tails of both observables. A moment is admitted only if this sample resolves
+its target to the calculation's own precision, and only if what it adds beyond the
+already-admitted moments is known better than a tenth of the prior's spread along
+that new direction (the same bound is applied to its shift across the 28 scale
+schemes). The delivered multipliers are then refit on the FULL sample
+(`FULLFIT_EXPORT=1`, streaming), so the exported lambdas close the target moments
+on all events.
 
 ### 2. Reproduce or re-fit from scratch
 
@@ -131,7 +115,7 @@ Newton fit → out-of-sample model selection → export — for any prior:
 
 This is the exact driver that produced `products/`. It needs a prior sample laid out
 as `sherpa_prior_<ENERGY>/` (see [Input format](#input-format)) and the theory
-moments in `moments/`.
+moments in `moments_<ENERGY>/` (shipped here for 13TeV, 13p6TeV and 13TeV_powheg).
 
 ## What's in here
 
@@ -140,21 +124,25 @@ moments in `moments/`.
 | `apply_lambdas.py` | event-local reweighter — apply the delivered weights (the product consumer) |
 | `optimizer_DY_unc.py` | the MaxEnt engine: features, penalized dual, Newton solver with LM damping |
 | `build_tau_sets.py` | candidate moment pools (precision screen, signal-to-noise) |
+| `admit_prune.py` | statistical admission: only moments the prior can carry enter the fit |
 | `select_stable.py` | automatic stability pruning to an absolute effective-event floor |
+| `fit_health_v2.py`, `check_smallqt.py`, `health_shrink.py` | export health gate (small-qT divergence, N_eff floor, per-scheme dC) and the bounded shrink fallback |
+| `validate_shipped_weights.py` | histograms the SHIPPED per-event weights against the calculation (no refit) |
 | `final_plots_pro.py` | fit, uncertainty propagation, plots, and the `lambda_export.json` export |
 | `run_pipeline.sh` | end-to-end driver (pools → prune → fit → select → export) |
 | `verify.py` | reproduction checks (see [`VERIFY.md`](VERIFY.md)) |
-| `moments/<E>/` | analytic N⁴LL′+N³LO moments and distributions, and the selected moment set, per energy |
+| `moments_<E>/` | analytic N⁴LL′+N³LO moments and distributions, and the selected moment set, per energy |
 | `products/<E>/` | **the delivered result**: `lambda_export.json` (+ 28-variation file, and for priors that carry generator scale weights a `lambda_export_prior_variations.json`) and the final plots |
 | `examples/powheg_prior.md` | end-to-end recipe for reproducing the POWHEG+Pythia8 prior and its 7-point variations |
 
 Three priors are shipped: `13TeV` and `13p6TeV` (Sherpa NLO multi-jet merged, the
-published deliverables) and `13TeV_powheg` (POWHEG-BOX Z + Pythia 8, 61 moments).
-The POWHEG entry is a complete worked example on an independent generator: see
-[`examples/powheg_prior.md`](examples/powheg_prior.md) for the full recipe to
-regenerate that prior yourself (event generation, 7-point matrix-element scale
-reweighting, shower matching, prior layout), or apply its delivered weights directly.
-Its moment set differs from the Sherpa ones by design: the procedure is
+published deliverables; 17 and 16 moments) and `13TeV_powheg` (19 moments, ungated):
+a replica of the ATLAS MC15 sample DSID 361106 — POWHEG-BOX-V1 Z showered with
+Pythia 8.186 (AZNLO tune, CTEQ6L1) and Photos++ QED FSR — the paper's
+prior-independence demonstration on an independent generator. See
+[`examples/powheg_prior.md`](examples/powheg_prior.md) for the generator
+configurations and a template recipe for putting your own sample through the
+pipeline. Its moment set differs from the Sherpa ones by design: the procedure is
 prior-agnostic, the selection is prior-specific.
 
 ## Verification
@@ -194,26 +182,24 @@ See [`CITATION.cff`](CITATION.cff). Please cite the paper.
 
 BSD-3-Clause — see [`LICENSE`](LICENSE).
 
-## Fit-health gate and the conditioning fallback
+## Selection and health guards
 
-Every fit is checked against three prior-universal health criteria before export:
-`max|lambda| < 30`, `|log_norm_shift| < 5`, and per-scheme `|dC| < 0.5`
-(`fit_health.py`, exit-code style). A fit that fails is NOT shipped: the moment
-selection is rebuilt under a joint-conditioning constraint and refit until healthy.
+A moment enters the fit only if the prior can carry the constraint (`admit_prune.py`):
+the sample must resolve its target to the calculation's own precision, and what it
+adds beyond the already-admitted moments must be known better than 0.1 of the prior's
+spread along that new direction, with the same bound applied to its shift across the
+28 scale schemes. `select_stable.py` then prunes to a stable set; a fit that exhausts
+its Newton budget (`MAX_STEPS=2000`, chosen so it never binds on a healthy set) counts
+as unstable. Every export must pass the health gate (`fit_health_v2.py`): the weight
+may not diverge as q_T → 0 (`check_smallqt.py`), the effective sample must stay above
+an absolute floor, and no scale scheme may shift the normalization by more than
+`|dC| < 0.5`. A failing member is dropped (`health_shrink.py`) and the fit is redone;
+a fit that cannot pass is not shipped. The out-of-sample selection additionally
+refuses any moment set that agrees with the calculation *worse than the unreweighted
+prior* on any validation distribution.
 
-Why: per-moment screens cannot see joint degeneracy. A rank-deficient moment set
-gives the dual a flat valley -- the optimizer parks huge cancelling multipliers there
-that pass stationarity, N_eff, closure and held-out validation, yet detonate on
-extreme-feature events (per-scheme normalizations shift by e^50-e^100). Two tools
-implement the fallback:
-
-- `rank_prune.py PRIOR WINNER.json OUT.json TOL` -- greedy conditioning prune of an
-  existing set (keeps the earlier moment of each degenerate family);
-- `grow_select.py PRIOR OUT.json TOL POOL1.json [POOL2.json ...]` -- grows a set from
-  the full screened candidate pool under the same admission test (preferred: reaches
-  independent moments the pruned ordering starves).
-
-Loop either one over a tol ladder (e.g. 0.25, 0.35, 0.45, ...) with `fit_health.py`
-as the stop condition. On the POWHEG Born 10M prior this converges at tol=0.35 with
-22 moments: max|lambda|=0.43, dC in [-0.03,+0.16], out-of-sample qT 1.36% / aco 1.77%.
-The Sherpa fits pass the gate as delivered; the fallback never fires for them.
+The delivered per-event weights are re-derived from `lambda_export.json` alone and
+checked event-by-event against the pipeline's reference weights
+(`validate_shipped_weights.py`, `verify.py --prior ...`); the release fingerprints in
+`CODE_MD5.txt` and the exact diff to the production tree in `PROVENANCE.diff` tie
+this repository to the paper's runs.

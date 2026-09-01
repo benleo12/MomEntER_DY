@@ -2,7 +2,12 @@
 tau cuts and the parameter-free S/N>1 cut. Names in rt-side×dphi-side format."""
 import os,json,numpy as np,optimizer_DY_unc as o
 for v in ("OMP_NUM_THREADS","OPENBLAS_NUM_THREADS"): os.environ.setdefault(v,"4")
-ENE=os.environ.get('ENERGY','13TeV'); _M={'13TeV':'13TeV','13p6TeV':'13p6TeV','13TeV_v2':'13TeV_v2','13p6TeV_v2':'13p6TeV_v2','13TeV_m':'13TeV_m','13TeV_py':'13TeV_py','13TeV_pwg':'13TeV_pwg','13TeV_lomlm':'13TeV_lomlm'}[ENE]
+ENE=os.environ.get('ENERGY','13TeV'); _M={'13TeV':'13TeV','13p6TeV':'13p6TeV','13TeV_v2':'13TeV_v2','13p6TeV_v2':'13p6TeV_v2','13TeV_m':'13TeV_m','13TeV_py':'13TeV_py','13TeV_pwg':'13TeV_pwg','13TeV_pwg10M':'13TeV_pwg10M','13TeV_pwg10M_M0505':'13TeV_pwg10M_M0505','13TeV_v3_M0505':'13TeV_v3_M0505','13TeV_pwg10M_M051':'13TeV_pwg10M_M051','13TeV_v3_M051':'13TeV_v3_M051','13TeV_pwg10M_M105':'13TeV_pwg10M_M105','13TeV_v3_M105':'13TeV_v3_M105','13TeV_pwg10M_M12':'13TeV_pwg10M_M12','13TeV_v3_M12':'13TeV_v3_M12','13TeV_pwg10M_M21':'13TeV_pwg10M_M21','13TeV_v3_M21':'13TeV_v3_M21','13TeV_pwg10M_M22':'13TeV_pwg10M_M22','13TeV_v3_M22':'13TeV_v3_M22','13TeV_lomlm':'13TeV_lomlm','13TeV_v3':'13TeV_v3'}
+if ENE not in _M:
+    import os as _os
+    if not _os.path.isdir(f"sherpa_prior_{ENE}"): raise SystemExit(f"unknown ENERGY={ENE}")
+    _M[ENE]=ENE
+_M=_M[ENE]
 MOM=f"moments_{_M}"; PRIOR=f"sherpa_prior_{_M}"; CSV=f"{MOM}/DYMoments_N4LLp+N3LO.csv"
 print(f"  ENERGY={ENE} prior={PRIOR} MOM={MOM}")
 NEV=int(os.environ.get('NEV','20000000')); B_=2000000

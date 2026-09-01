@@ -1,10 +1,16 @@
-# Reproducing the POWHEG+Pythia8 prior (13 TeV)
+# Building a POWHEG+Pythia8 prior (13 TeV)
 
-This is the complete recipe for the third prior shipped in `products/13TeV_powheg/`:
-a POWHEG-BOX Z sample showered with Pythia 8 using the standard shower-veto matching,
-carrying its own 7-point matrix-element scale variations. Use it either to regenerate
-an equivalent sample from scratch, or as a template for putting your own generator
-through the same pipeline.
+> **Shipped configuration.** `products/13TeV_powheg/` was produced from a replica of
+> the ATLAS MC15 sample DSID 361106: POWHEG-BOX-**V1** Z
+> ([`powheg_input_361106`](powheg_input_361106), `mass_low = 35` GeV) showered with
+> **Pythia 8.186** using the AZNLO tune + CTEQ6L1 and Photos++ for QED FSR
+> ([`pythia_aznlo_8186_photos.cmnd`](pythia_aznlo_8186_photos.cmnd)), dressed
+> leptons (ΔR < 0.1), analysed for m_ll > 40 GeV. It validates against the ATLAS
+> sample at the 0.1% level where the two overlap.
+
+The recipe below builds a comparable sample with the current POWHEG-BOX-V2 and
+shower-veto matching, carrying 7-point matrix-element scale variations — use it as a
+template for putting your own generator through the same pipeline.
 
 Everything below was used to produce the shipped numbers. All the scripts referenced
 live in this `examples/` directory.

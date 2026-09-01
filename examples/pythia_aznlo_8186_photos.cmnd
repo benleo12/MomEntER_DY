@@ -1,0 +1,46 @@
+! Pythia 8 settings = ATLAS MC15JobOptions fragments, translated to Pythia 8.3 names:
+!   Pythia8_Base_Fragment.py + Pythia8_AZNLO_CTEQ6L1_Common.py + Pythia8_Powheg_Main31.py
+! Order matters: Tune:pp is applied when read, everything after it overrides the tune.
+
+Beams:frameType = 4
+! Beams:LHEF is set on the command line by shower_atlas
+
+! --- Pythia8_Base_Fragment.py (ATLAS particle / EW parameters) ---
+Main:timesAllowErrors = 500
+23:m0 = 91.1876
+23:mWidth = 2.4952
+24:m0 = 80.399
+24:mWidth = 2.085
+StandardModel:sin2thetaW = 0.23113
+StandardModel:sin2thetaWbar = 0.23146
+ParticleDecays:limitTau0 = on
+ParticleDecays:tau0Max = 10.0
+
+! --- Pythia8_AZNLO_CTEQ6L1_Common.py ---
+Tune:pp = 5
+BeamRemnants:primordialKThard = 1.74948
+SpaceShower:alphaSorder = 2
+SpaceShower:alphaSvalue = 0.118
+SpaceShower:pT0Ref = 1.923589
+MultipartonInteractions:pT0Ref = 2.002887
+PDF:pSet = 8
+
+! --- Pythia8_Powheg_Main31.py (ATLAS Main31 veto) ---
+SpaceShower:pTmaxMatch = 2
+TimeShower:pTmaxMatch = 2
+POWHEG:veto = 1
+POWHEG:nFinal = 1
+POWHEG:pThard = 0
+POWHEG:pTdef = 2
+! not set by ATLAS -> Pythia defaults, written out so nothing is implicit
+POWHEG:vetoCount = 3
+POWHEG:pTemt = 0
+POWHEG:emitted = 0
+POWHEG:MPIveto = 0
+
+! --- QED FSR ---
+! ATLAS: Photos++ (InfraRedCutOff=1e-7) with Pythia's lepton QED off (TimeShower:QEDshowerByL = off).
+! Without a Photos++ build we keep Pythia's own QED FSR on (its default).  See README, item 3.
+TimeShower:QEDshowerByL = off
+
+Print:quiet = on

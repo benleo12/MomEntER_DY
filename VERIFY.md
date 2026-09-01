@@ -11,8 +11,9 @@ that the weight reverts to the prior above the `q_T` hand-off.
 
 ```
 $ python verify.py
-[L1 13TeV   ] moments=41  schemes=29  finite=True  reverts_above_200=True
-[L1 13p6TeV ] moments=28  schemes=29  finite=True  reverts_above_200=True
+[L1 13TeV       ] moments=17  schemes=29  finite=True  reverts_above_200=True
+[L1 13p6TeV     ] moments=16  schemes=29  finite=True  reverts_above_200=True
+[L1 13TeV_powheg] moments=19  schemes=29  finite=True  ungated (pure reweighting everywhere)
 L1: PASS
 ```
 
