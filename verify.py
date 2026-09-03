@@ -32,8 +32,10 @@ def level1():
         revert = bool(np.allclose(w[qT > hi], w0[qT > hi])) if gated else True
         ok &= finite and revert
         tail = f"reverts_above_{hi:g}={revert}" if gated else "ungated (pure reweighting everywhere)"
+        rb = d.get("rate", {}); K = rb.get("K"); nks = sum(1 for v in rb.get("per_scheme", {}).values() if v.get("K"))
+        rate = f"K={K:.4f} ({nks} schemes)" if K else ("rate: sigma_calc shipped, K not set (supply sigma_prior)" if rb else "no rate block")
         print(f"[L1 {energy:12s}] moments={len(d['moments'])}  schemes={len(schemes(energy))}  "
-              f"finite={finite}  {tail}")
+              f"finite={finite}  {tail}  {rate}")
     print("L1:", "PASS" if ok else "FAIL")
     return ok
 

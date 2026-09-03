@@ -254,4 +254,9 @@ echo "--- [6/6] validate the EXPORTED deliverable (not a refit): shipped weights
 # The per-pool validation above fits on 2M; the export ships a full-sample fit, and a gate fallback
 # can replace the set entirely.  So the deliverable itself is histogrammed here -- no refit, no cache.
 ENERGY=$E python validate_shipped_weights.py "$MOM/sherpa_${E}_maxent_weights.npz" 2>&1 | tee "$SCR/valship_$E.log" | sed "s/^/  /"
+echo "--- [7/7] rate block: the calculation's total rate (central + per scheme) and K = sigma_calc/sigma_prior ---"
+# K needs the prior's total cross section in pb: set RATE_PRIOR_PB=1 if the stored weights are pb per event
+# (POWHEG), or RATE_SIGMA_PRIOR=<pb> to supply it; otherwise sigma_calc is shipped and K is left null.
+RATE_ARGS=""; [ "${RATE_PRIOR_PB:-0}" = "1" ] && RATE_ARGS="--prior-weights-are-pb"; [ -n "${RATE_SIGMA_PRIOR:-}" ] && RATE_ARGS="--sigma-prior $RATE_SIGMA_PRIOR"
+python add_rate_block.py $E $RATE_ARGS 2>&1 | sed "s/^/  /"
 echo "===== PIPELINE $E DONE ($(date)) ====="

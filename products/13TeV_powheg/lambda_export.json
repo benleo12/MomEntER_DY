@@ -143,5 +143,163 @@
   "min_logit_minus_C_applied": -6.7849599800150955,
   "note": "MEASURED on all n_events with the exported lambda. neff_gated = N_eff of the GATED deliverable weights, the same functional select_stable.py prunes on; stability_floor is the winner set provenance floor (rescaled to n_events). closure_pct = per-moment |<phi_k>_w/T_k - 1|. max/min(logit-C) are over events with beta(qT)>0."
  },
- "closure": "MEASURED on all 48,623,807 events with the lambdas in this file: the 19 moments of this set are reproduced to median 0.000% / max 0.001%; N_eff of the deliverable = 99.29% (prior 99.51%)."
+ "closure": "MEASURED on all 48,623,807 events with the lambdas in this file: the 19 moments of this set are reproduced to median 0.000% / max 0.001%; N_eff of the deliverable = 99.29% (prior 99.51%).",
+ "rate": {
+  "description": "Overall rate normalization. The MaxEnt weight preserves the prior's normalization (sum w = sum w0) and transfers only the shape; multiply every weight (central branch and tail branch alike) by K to normalize the sample to the calculation's total rate. Per scheme use per_scheme[s].K with schemes[s] of lambda_export_variations.json.",
+  "phase_space": "inclusive, m_ll >= 40 GeV, all lepton rapidities (the calculation's normalization moment); the prior sample is generated with the same mass cut",
+  "sigma_calc_pb": 2007.9843963526,
+  "sigma_calc_mc_unc_pb": 4.742056144667971,
+  "sigma_prior_pb": 2152.0567071541723,
+  "sigma_prior_source": "mean of the stored per-event weights, which are in pb (sigma = sum w / N)",
+  "prior_n_events": 48623807,
+  "prior_mean_stored_weight": 2152.0567071541723,
+  "K": 0.9330536642818813,
+  "per_scheme": {
+   "0p5C0_np": {
+    "sigma_calc_pb": 2008.4013770282425,
+    "sigma_calc_mc_unc_pb": 4.747244003392342,
+    "K": 0.9332474234306325
+   },
+   "0p5kappa_np": {
+    "sigma_calc_pb": 2007.6121179019856,
+    "sigma_calc_mc_unc_pb": 4.734543621801044,
+    "K": 0.9328806769951723
+   },
+   "0p5MuBeam": {
+    "sigma_calc_pb": 2010.3137400711237,
+    "sigma_calc_mc_unc_pb": 4.833682194041123,
+    "K": 0.9341360445513138
+   },
+   "0p5MuBF": {
+    "sigma_calc_pb": 2013.553588341662,
+    "sigma_calc_mc_unc_pb": 4.788067426209308,
+    "K": 0.9356415105828398
+   },
+   "0p5MuCt": {
+    "sigma_calc_pb": 2007.8964975768731,
+    "sigma_calc_mc_unc_pb": 4.738041419920033,
+    "K": 0.9330128202021529
+   },
+   "0p5MuFac": {
+    "sigma_calc_pb": 2015.576024140402,
+    "sigma_calc_mc_unc_pb": 4.756079637587328,
+    "K": 0.9365812794058531
+   },
+   "0p5MuFtran": {
+    "sigma_calc_pb": 2010.4124525909524,
+    "sigma_calc_mc_unc_pb": 4.8131620027214685,
+    "K": 0.9341819134726581
+   },
+   "0p5MuHard": {
+    "sigma_calc_pb": 2008.7049199582464,
+    "sigma_calc_mc_unc_pb": 4.739649526731754,
+    "K": 0.9333884712612937
+   },
+   "0p5MuSoft": {
+    "sigma_calc_pb": 2006.6084686371094,
+    "sigma_calc_mc_unc_pb": 4.734267936896943,
+    "K": 0.932414309514455
+   },
+   "0p5NuBeam": {
+    "sigma_calc_pb": 2008.8932983289499,
+    "sigma_calc_mc_unc_pb": 4.737260180615967,
+    "K": 0.9334760053723035
+   },
+   "0p5NuSoft": {
+    "sigma_calc_pb": 2007.3679938575165,
+    "sigma_calc_mc_unc_pb": 4.728444536970992,
+    "K": 0.9327672394432447
+   },
+   "2C0_np": {
+    "sigma_calc_pb": 2007.709012953835,
+    "sigma_calc_mc_unc_pb": 4.735024269764601,
+    "K": 0.932925701390453
+   },
+   "2kappa_np": {
+    "sigma_calc_pb": 2008.5453281132718,
+    "sigma_calc_mc_unc_pb": 4.735874091868877,
+    "K": 0.9333143134361565
+   },
+   "2MuBeam": {
+    "sigma_calc_pb": 2009.4182031314135,
+    "sigma_calc_mc_unc_pb": 4.72086686162366,
+    "K": 0.9337199138161278
+   },
+   "2MuBF": {
+    "sigma_calc_pb": 2006.5138035370503,
+    "sigma_calc_mc_unc_pb": 4.750923386106215,
+    "K": 0.9323703213148206
+   },
+   "2MuCt": {
+    "sigma_calc_pb": 2007.728543426799,
+    "sigma_calc_mc_unc_pb": 4.745285246366679,
+    "K": 0.932934776649901
+   },
+   "2MuFac": {
+    "sigma_calc_pb": 2004.323039101307,
+    "sigma_calc_mc_unc_pb": 4.777360421767776,
+    "K": 0.9313523349260509
+   },
+   "2MuFtran": {
+    "sigma_calc_pb": 2007.0717485776743,
+    "sigma_calc_mc_unc_pb": 4.977749554395859,
+    "K": 0.9326295826246035
+   },
+   "2MuHard": {
+    "sigma_calc_pb": 2006.7482632171723,
+    "sigma_calc_mc_unc_pb": 4.741981997508144,
+    "K": 0.9324792681094578
+   },
+   "2MuSoft": {
+    "sigma_calc_pb": 2010.5642441058626,
+    "sigma_calc_mc_unc_pb": 4.73377259481485,
+    "K": 0.934252446704615
+   },
+   "2NuBeam": {
+    "sigma_calc_pb": 2007.3835101246643,
+    "sigma_calc_mc_unc_pb": 4.728170396679047,
+    "K": 0.9327744494145694
+   },
+   "2NuSoft": {
+    "sigma_calc_pb": 2008.8876377057463,
+    "sigma_calc_mc_unc_pb": 4.7372847592290075,
+    "K": 0.9334733750404982
+   },
+   "0p5MuF": {
+    "sigma_calc_pb": 2004.3867575246486,
+    "sigma_calc_mc_unc_pb": 5.718036132489221,
+    "K": 0.9313819430786288
+   },
+   "0p5MuRF": {
+    "sigma_calc_pb": 2011.9770108813962,
+    "sigma_calc_mc_unc_pb": 6.519138577703202,
+    "K": 0.9349089195432893
+   },
+   "0p5MuR": {
+    "sigma_calc_pb": 2008.5988310601876,
+    "sigma_calc_mc_unc_pb": 6.307043036840378,
+    "K": 0.9333391747452185
+   },
+   "2MuF": {
+    "sigma_calc_pb": 2011.5509361852771,
+    "sigma_calc_mc_unc_pb": 5.415405479503498,
+    "K": 0.9347109346599437
+   },
+   "2MuRF": {
+    "sigma_calc_pb": 2004.914720777687,
+    "sigma_calc_mc_unc_pb": 5.819489664951513,
+    "K": 0.9316272726980962
+   },
+   "2MuR": {
+    "sigma_calc_pb": 1996.5285350687661,
+    "sigma_calc_mc_unc_pb": 5.950089107236106,
+    "K": 0.927730448938275
+   },
+   "central": {
+    "sigma_calc_pb": 2007.9843963526,
+    "sigma_calc_mc_unc_pb": 4.742056144667971,
+    "K": 0.9330536642818813
+   }
+  }
+ }
 }

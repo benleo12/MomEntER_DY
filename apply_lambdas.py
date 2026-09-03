@@ -8,7 +8,10 @@ time. The per-event reweighting is
     w_rew = w0 * exp( sum_k lambda_physical[k] * phi_k  -  log_norm_shift )
 
 where log_norm_shift is a fixed constant (stored in the file) that already sets the
-normalization (sum w_rew = sum w0). Self-contained: reads only a lambda_export.json.
+normalization (sum w_rew = sum w0): the fit transfers the SHAPE of the calculation.
+The calculation's total rate enters as the overall factor K = sigma_calc/sigma_prior
+(the "rate" block of the file; per scheme K_s), applied to every event, tail included,
+unless rate=False. Self-contained: reads only a lambda_export.json.
 
 For each event you supply four numbers:
     w0       generator weight
@@ -23,9 +26,10 @@ Usage:
     w = reweight(w0, qT, m_ll, dphi_ll, energy="13TeV")   # numpy arrays or scalars
 
 The delivered products live in products/<energy>/:
-    products/13TeV/lambda_export.json              central weights (41 moments)
+    products/13TeV/lambda_export.json              central weights (17 moments)
     products/13TeV/lambda_export_variations.json   central + 28 scale/NP schemes
-    products/13p6TeV/...                           same at 13.6 TeV (28 moments)
+    products/13p6TeV/...                           same at 13.6 TeV (16 moments)
+    products/13TeV_powheg/...                      POWHEG (ATLAS 361106 config), 19 moments, ungated
 """
 import os, json, numpy as np
 
@@ -60,12 +64,12 @@ def features(names, rt, dphi):
     return np.column_stack(cols)
 
 
-def _apply(w0, qT, m_ll, dphi_ll, names, lam, C, gat, gate=True, w0_tail=None):
+def _apply(w0, qT, m_ll, dphi_ll, names, lam, C, gat, gate=True, w0_tail=None, K=1.0):
     w0, qT, m_ll, dphi_ll = map(np.asarray, (w0, qT, m_ll, dphi_ll))
     logit = features(names, qT / m_ll, dphi_ll) @ np.asarray(lam)   # sum_k lambda_k phi_k
     w_rew = w0 * np.exp(logit - C)                       # event-local: fixed shift, no renorm
     if not gate:
-        return w_rew
+        return K * w_rew
     lo, hi = gat['window_GeV']                           # smooth hand-off [120,200] GeV
     t = np.clip((qT - lo) / (hi - lo), 0, 1)
     beta = 1.0 - (6*t**5 - 15*t**4 + 10*t**3)            # 1 below lo, 0 above hi
@@ -76,27 +80,29 @@ def _apply(w0, qT, m_ll, dphi_ll, names, lam, C, gat, gate=True, w0_tail=None):
     # central prior in the tail (resummation is off there), the generator variations act
     # only in the tail, so the two tile the phase space without double counting.
     wt = w0 if w0_tail is None else np.asarray(w0_tail)
-    return beta * w_rew + (1.0 - beta) * wt
+    return K * (beta * w_rew + (1.0 - beta) * wt)
 
 
-def reweight(w0, qT, m_ll, dphi_ll, energy="13TeV", jpath=None, gate=True, w0_tail=None):
+def reweight(w0, qT, m_ll, dphi_ll, energy="13TeV", jpath=None, gate=True, w0_tail=None, rate=True):
     """Central reweighting. `energy` in {"13TeV","13p6TeV"}, or pass an explicit jpath.
     `w0_tail`: optional generator variation weight used in the tail branch of the
     hand-off (e.g. one member of the sample's 7-point muR/muF variation set)."""
     d = json.load(open(jpath or _default(energy)))
+    K = (d.get('rate', {}).get('K') or 1.0) if rate else 1.0   # null K (rate not certified) -> 1
     return _apply(w0, qT, m_ll, dphi_ll, d['moments'],
-                  d['lambda_physical'], d['log_norm_shift'], d['gating'], gate, w0_tail)
+                  d['lambda_physical'], d['log_norm_shift'], d['gating'], gate, w0_tail, K)
 
 
 def reweight_scheme(w0, qT, m_ll, dphi_ll, scheme='central',
-                    energy="13TeV", jpath=None, gate=True, w0_tail=None):
+                    energy="13TeV", jpath=None, gate=True, w0_tail=None, rate=True):
     """One scale/NP scheme (scheme='central','2MuR',...). Repeat over all schemes for the band.
     Full band with generator tail variations: envelope over the 29 theory schemes
     (w0_tail=None) union reweight(..., w0_tail=w0_V) for each generator variation V."""
     d = json.load(open(jpath or _default(energy, variations=True)))
     s = d['schemes'][scheme]
+    K = (s.get('K') or d.get('rate', {}).get('K') or 1.0) if rate else 1.0
     return _apply(w0, qT, m_ll, dphi_ll, d['moments'],
-                  s['lambda_physical'], s['log_norm_shift'], d['gating'], gate, w0_tail)
+                  s['lambda_physical'], s['log_norm_shift'], d['gating'], gate, w0_tail, K)
 
 
 def schemes(energy="13TeV", jpath=None):
@@ -116,6 +122,6 @@ if __name__ == '__main__':
         w = reweight(w0, qT, m, dphi, energy=energy)
         print(f"[{energy}] parsed {len(d['moments'])} moments OK; "
               f"finite={np.all(np.isfinite(w))}, "
-              f"sum(w)/sum(w0)={w.sum()/w0.sum():.4f}, "
+              f"sum(w)/sum(w0)={w.sum()/w0.sum():.4f} (=K {d.get('rate',{}).get('K',1.0):.4f}), "
               f"above-200-reverts={np.allclose(w[qT>200], w0[qT>200])}, "
               f"n_schemes={len(schemes(energy))}")
