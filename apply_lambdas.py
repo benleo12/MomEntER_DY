@@ -122,6 +122,6 @@ if __name__ == '__main__':
         w = reweight(w0, qT, m, dphi, energy=energy)
         print(f"[{energy}] parsed {len(d['moments'])} moments OK; "
               f"finite={np.all(np.isfinite(w))}, "
-              f"sum(w)/sum(w0)={w.sum()/w0.sum():.4f} (=K {d.get('rate',{}).get('K',1.0):.4f}), "
+              f"sum(w)/sum(w0)={w.sum()/w0.sum():.4f} (K={d.get('rate',{}).get('K') or 'null -> 1'}), "
               f"above-200-reverts={np.allclose(w[qT>200], w0[qT>200])}, "
               f"n_schemes={len(schemes(energy))}")
