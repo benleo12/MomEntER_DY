@@ -203,3 +203,8 @@ checked event-by-event against the pipeline's reference weights
 (`validate_shipped_weights.py`, `verify.py --prior ...`); the release fingerprints in
 `CODE_MD5.txt` and the exact diff to the production tree in `PROVENANCE.diff` tie
 this repository to the paper's runs.
+
+
+## Paper figures
+
+`bash figs/make_figures.sh` regenerates the paper figures from the shipped histogram inputs in `figs/data/` (see `figs/README.md`).

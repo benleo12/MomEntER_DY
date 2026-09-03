@@ -5,3 +5,4 @@ output/
 *.csv.gz
 .DS_Store
 .lamc_*.npy
+figs/out/
