@@ -98,11 +98,34 @@ for P in $POOLS; do
   # Every pool then scores invalid and meta-select
   # aborts with "no pool produced a valid PROG run".  That is why GATE=0 (POWHEG) never hit
   # this and GATE=1 (Sherpa) always does.  These literal prefixes override the exports.
-  ENERGY=$E NEV=200000000 FIT_NEV=5000000 NEV_BAND=10000000 BATCH=2000000 SCHMAX=28 RCOND=1e-3 \
-    GATE=0 GATE_PRO=0 UNGATED=1 \
-    OUT_TAG=PROG_$P \
-    PYTHONUNBUFFERED=1 python final_plots_pro.py "$MOM/stable_$P.json" > "$SCR/prog_${E}_$P.log" 2>&1 \
-    || { echo "  [pool $P] PROG FAILED"; tail -3 "$SCR/prog_${E}_$P.log"; continue; }
+  # v5.2: the validation fit uses the statistical penalty of the delivered fit, the prune the combined
+  # statistical and scale penalty, so a set can pass the prune and stall here (13.6 TeV, fit-sample seed 7,
+  # 2026-09-04).  Same remedy as the export stage: drop the moment the fit cannot satisfy, re-prune,
+  # validate again, at most 3 rounds.  A set that still does not converge is not a deliverable.
+  PROG_OK=0
+  for TRY in 0 1 2 3; do
+    rm -f "$MOM/fullfit_unconverged.json"
+    ENERGY=$E NEV=200000000 FIT_NEV=5000000 NEV_BAND=10000000 BATCH=2000000 SCHMAX=28 RCOND=1e-3 \
+      GATE=0 GATE_PRO=0 UNGATED=1 \
+      OUT_TAG=PROG_$P \
+      PYTHONUNBUFFERED=1 python final_plots_pro.py "$MOM/stable_$P.json" > "$SCR/prog_${E}_$P.log" 2>&1; RC=$?
+    [ $RC -eq 0 ] && { PROG_OK=1; break; }
+    if [ $RC -eq 3 ] && [ -f "$MOM/fullfit_unconverged.json" ] && [ $TRY -lt 3 ]; then
+      grep -E "NOT CONVERGED|resid/scale" "$SCR/prog_${E}_$P.log" | head -4 | sed "s/^/  [pool $P] /"
+      python - "$MOM/stable_$P.json" "$MOM/fullfit_unconverged.json" "$MOM/stable_${P}_V.json" <<'PY'
+import json,sys
+s=json.load(open(sys.argv[1])); u=json.load(open(sys.argv[2])); w=u['worst'][0]
+s['selected_moments']=[m for m in s['selected_moments'] if m!=w]; s['n_selected']=len(s['selected_moments'])
+s['source']=s.get('source','')+f' | validation-shrink: dropped {w} (resid {u["resid"][0]:.3g})'
+json.dump(s,open(sys.argv[3],'w'),indent=2,ensure_ascii=False); print(f"  validation-shrink: dropped {w} -> K={s['n_selected']}")
+PY
+      ENERGY=$E NEV=200000000 FIT_NEV=5000000 BATCH=2000000 FRAC=0.5 MAX_STEPS=2000 MAXDROP=15 SIG_MODE=statscale \
+        PYTHONUNBUFFERED=1 python select_stable.py "$MOM/stable_${P}_V.json" "$MOM/stable_$P.json" > "$SCR/sel_${E}_${P}_vshrink$TRY.log" 2>&1 \
+        || { echo "  [pool $P] validation-shrink $TRY: reduced set NOT STABILIZABLE"; break; }
+      grep -E "STABLE at" "$SCR/sel_${E}_${P}_vshrink$TRY.log" | sed "s/^/  [pool $P] validation-shrink $TRY/"
+    else break; fi
+  done
+  [ $PROG_OK -eq 1 ] || { echo "  [pool $P] PROG FAILED"; tail -3 "$SCR/prog_${E}_$P.log"; continue; }
   fi
   grep -E "rew/thy" "$SCR/prog_${E}_$P.log" | sed "s/^/  [pool $P]/"
 done

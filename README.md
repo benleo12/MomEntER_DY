@@ -194,7 +194,13 @@ as unstable. Every export must pass the health gate (`fit_health_v2.py`): the we
 may not diverge as q_T → 0 (`check_smallqt.py`), the effective sample must stay above
 an absolute floor, and no scale scheme may shift the normalization by more than
 `|dC| < 0.5`. A failing member is dropped (`health_shrink.py`) and the fit is redone;
-a fit that cannot pass is not shipped. The out-of-sample selection additionally
+a fit that cannot pass is not shipped. A validation fit that does not converge is
+treated like a non-converged export (v5.2): the moment with the largest stationarity
+residual is dropped, the set is re-pruned and validated again, at most three times.
+Repeating the selection with other random fit samples (seeds 7 and 2024 against the
+production seed 42) leaves the POWHEG set unchanged, keeps 16 of 17 moments at 13 TeV for
+one seed and 12 for the other, and moves the agreement with the calculation by up to
+about one percentage point. The out-of-sample selection additionally
 refuses any moment set that agrees with the calculation *worse than the unreweighted
 prior* on any validation distribution.
 

@@ -106,6 +106,18 @@ def fit_lam(T,Ff_,Gf_,w_,lam0=None,steps=int(os.environ.get('MAX_STEPS_FIT','300
     msg=f"  *** {tag}: FIT NOT CONVERGED ({st['reason']}, accepted steps={st['accepted_steps']}, max resid/scale={st.get('max_rel',float('nan')):.3g}, max|pull|={st['max_pull']:.3g}, |lam|max={np.abs(lam).max() if np.all(np.isfinite(lam)) else float('inf'):.3g}) ***"
     print(msg,flush=True)
     if strict:
+        # Name the offenders exactly as the full-sample export does (stationarity residual per moment,
+        # |g_k| / max(|t_k|, sigma_k)) so the driver can apply the same shrink remedy at this stage.
+        try:
+            _lam=lam if np.all(np.isfinite(lam)) else np.zeros(K)
+            _,_g,_,_=m.dual_loss_grad_hess(_lam)
+            _res=np.abs(_g)/np.maximum(np.maximum(np.abs(m.targets),m.sigma),1e-300)
+            _ord=[int(k) for k in np.argsort(-_res)[:5]]
+            for _k in _ord: print(f"     {names[_k]:34s} resid/scale={_res[_k]:.3e}",flush=True)
+            json.dump({'set':list(names),'worst':[names[_k] for _k in _ord],'resid':[float(_res[_k]) for _k in _ord],
+                       'max':float(_res.max()),'lam_max':float(np.abs(_lam).max()),'stage':tag},
+                      open(f"{MOM}/fullfit_unconverged.json",'w'),indent=1,ensure_ascii=False)
+        except Exception as _ex: print(f"  (could not name the offending moment: {_ex})",flush=True)
         print("  refusing to plot/cache/export a non-converged central fit (rc=3)",flush=True); raise SystemExit(3)
     print("      -> this scheme keeps the central lambda (contributes zero width to the band)",flush=True)
     return lam0.copy() if lam0 is not None else np.zeros(K)

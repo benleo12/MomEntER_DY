@@ -1,3 +1,7 @@
+# v5.2 (2026-09-05, this repository): on top of the v5 production code below, the non-convergence remedy of the
+# export stage (drop the moment with the largest stationarity residual, re-prune, retry, at most 3 rounds) is also
+# applied at the validation stage: run_pipeline.sh (PROG loop) and final_plots_pro.py (fit_lam, strict branch writes
+# fullfit_unconverged.json). Found by the fit-sample seed study (13.6 TeV, seed 7). No production run took this path.
 # Release provenance: this code is the production pipeline (dyfit/ps, fingerprint CODE_MD5_v5.txt +
 # validate_shipped_weights.py) with EXACTLY the following cosmetic diffs: three dead local-path
 # fallbacks removed. No physics line differs. Production hashes:
