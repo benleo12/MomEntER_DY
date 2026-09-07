@@ -1,5 +1,7 @@
 #!/bin/bash
-D=/Users/user/dy_workdir/powheg_Z_1M_m40
+# POWHEG_DIR must point at the POWHEG run directory (the one holding pwgevents.lhe and powheg.input).
+set -euo pipefail
+D=${POWHEG_DIR:?set POWHEG_DIR to the POWHEG run directory}
 cd "$D"
 [ -f pwgevents-ORIGINAL.lhe ] || cp pwgevents.lhe pwgevents-ORIGINAL.lhe
 i=0

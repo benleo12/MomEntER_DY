@@ -174,7 +174,7 @@ A.stairs(th[m], E, color=RED, lw=1, zorder=7, label=r"N$^4$LL$^\prime$+N$^3$LO")
 A.set_yscale("log"); A.set_ylabel(r"$1/\sigma\,$d$\sigma/$d$q_\mathrm{T}$ [1/GeV]", loc="top")
 hh,ll=A.get_legend_handles_labels(); order=[ll.index("ATLAS Data, EPJC80(2020)616")]+[i for i,l in enumerate(ll) if not l.startswith("ATLAS")]
 A.add_artist(A.legend([hh[i] for i in order],[ll[i] for i in order], alignment="left", loc="lower left", bbox_to_anchor=(0.01,0.01), markerfirst=True))
-for k,txt in enumerate([r"$pp\to l^+l^-$, Born leptons", r"$p_{T,l}\ge 27$ GeV, $|\eta_l|\le 2.5$", r"$66$ GeV$\le m_{ll}\le 116$ GeV"]):
+for k,txt in enumerate([r"$pp\to l^+l^-$, Born leptons", r"$p_{T,l}\geq 27$ GeV, $|\eta_l|\leq 2.5$", r"$66$ GeV$\leq m_{ll}\leq 116$ GeV"]):
     A.text(0.04, 0.32+0.09*(2-k), txt, transform=A.transAxes, ha="left", va="bottom")
 A.set_title("Transverse momentum of the lepton pair", loc="left")
 B = ax[1]

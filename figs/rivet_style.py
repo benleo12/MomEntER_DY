@@ -29,6 +29,7 @@ RED, BLUE, GREY = "#d62728", "#1f77b4", "0.55"
 PRI, REW = "#AEC7E8", "#D62728"     # Stefan's convention: prior light blue solid, prediction red solid
 RLO, RHI = 0.5, 1.4999                                           # ratio panel as in Stefan's plots
 STACK = os.environ.get("STACK", "q,d").split(",")
+ROW = os.environ.get("ROW", "0") == "1"   # side-by-side panels (two-column-spanning figures)
 THY_LABEL = r"N$^4$LL$^\prime$+N$^3$LO"
 
 def _knob(lbl): return lbl[3:] if lbl.startswith("0p5") else (lbl[1:] if lbl.startswith("2") else lbl)
@@ -63,10 +64,16 @@ def snap(e_fine, targets):
     out.append(e_fine[-1]); return np.array(out)
 
 # ---------------- frames -------------------------------------------------------------------------------
-def frames(n, figsize_one=(4.67, 4.68), gap=0.28):
-    """n stacked (spectrum, ratio) pairs; returns fig, [(ax, ar), ...]"""
-    fig = plt.figure(figsize=(figsize_one[0], figsize_one[1] * n))
-    outer = fig.add_gridspec(n, 1, hspace=gap, left=0.1875, right=0.968, top=1 - 0.07 / n, bottom=0.11 / n)
+def frames(n, figsize_one=(4.67, 4.68), gap=0.28, row=None):
+    """n (spectrum, ratio) pairs; stacked vertically, or side by side when ROW=1 (a figure that
+    spans both columns of the End Matter). Panel contents and style are identical either way."""
+    row = ROW if row is None else row
+    if row and n > 1:
+        fig = plt.figure(figsize=(3.50 * n, 4.34))
+        outer = fig.add_gridspec(1, n, wspace=0.235, left=0.088 / (n / 2.0), right=0.988, top=0.935, bottom=0.112)
+    else:
+        fig = plt.figure(figsize=(figsize_one[0], figsize_one[1] * n))
+        outer = fig.add_gridspec(n, 1, hspace=gap, left=0.1875, right=0.968, top=1 - 0.07 / n, bottom=0.11 / n)
     pairs = []
     for i in range(n):
         gs = outer[i].subgridspec(2, 1, height_ratios=[6.0, 4.0], hspace=0.0)
@@ -127,7 +134,7 @@ def draw(ax, ar, e, ref, ref_err, pri, rew, rlo, rhi, prior_label, ref_label, re
 FID = {"qt": dict(xl=r"$p_\mathrm{T}^{\ell\ell}$ [GeV]", yl=r"$1/\sigma\,\mathrm{d}\sigma/\mathrm{d}p_\mathrm{T}^{\ell\ell}$", xlo=0.5),
        "ps": dict(xl=r"$\phi^*_\eta$", yl=r"$1/\sigma\,\mathrm{d}\sigma/\mathrm{d}\phi^*_\eta$", xlo=2e-3)}
 FID_TITLE = {"qt": "Transverse momentum of the lepton pair", "ps": r"$\phi^*_\eta$ of the lepton pair"}
-FID_NOTES = (r"$pp\to l^+l^-$, dressed", r"$p_{T,l}\ge 27$ GeV, $|\eta_l|\le 2.5$", r"$66$ GeV$\le m_{ll}\le 116$ GeV")
+FID_NOTES = (r"$pp\to l^+l^-$, dressed", r"$p_{T,l}\geq 27$ GeV, $|\eta_l|\leq 2.5$", r"$66$ GeV$\leq m_{ll}\leq 116$ GeV")
 DATA_LABEL = "ATLAS Data, EPJC80(2020)616"
 def rew_label_for(prior_label): return r"N$^4$LL$^\prime$+N$^3$LO+POWHEG" if "POWHEG" in prior_label else r"N$^4$LL$^\prime$+N$^3$LO+MEPS@NLO"
 
@@ -168,7 +175,7 @@ def thy_one(ax, ar, z, key, prior_label, title):
     schs = [str(s) for s in z["schemes"]]; e, H, T, tot = thy_hists(z, key)
     pri = dens(H[:, 0], e, tot[0]); rew, rlo, rhi = scheme_band(H, e, schs, tot)
     corner = "upper right" if key == "d" else "lower left"
-    decorate(ax, ar, THY_TITLE[key], THY[key]["yl"], "Ratio to calculation", THY[key]["xl"], notes=(title, r"$m_{ll}\ge 40$ GeV"), corner=corner)
+    decorate(ax, ar, THY_TITLE[key], THY[key]["yl"], "Ratio to calculation", THY[key]["xl"], notes=(title, r"$m_{ll}\geq 40$ GeV"), corner=corner)
     return draw(ax, ar, e, T["cen"], 0.5 * (T["sthi"] - T["stlo"]), pri, rew, rlo, rhi, prior_label, THY_LABEL,
                 ref_band=(T["slo"], T["shi"]), ref_hatch=(T["stlo"], T["sthi"]), xscale=THY[key]["xs"], xlo=THY[key]["xlo"], rew_label=rew_label_for(prior_label), corner=corner)
 

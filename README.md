@@ -198,17 +198,17 @@ a fit that cannot pass is not shipped. A validation fit that does not converge i
 treated like a non-converged export (v5.2): the moment with the largest stationarity
 residual is dropped, the set is re-pruned and validated again, at most three times.
 Repeating the selection with other random fit samples (seeds 7 and 2024 against the
-production seed 42) leaves the POWHEG set unchanged, keeps 16 of 17 moments at 13 TeV for
-one seed and 12 for the other, and moves the agreement with the calculation by up to
-about one percentage point. The out-of-sample selection additionally
+production seed 42) leaves the POWHEG set unchanged, changes the 13 TeV set (seed 2024 keeps
+16 of the 17 production moments and adds 4, K=20; seed 7 keeps 10 and adds 2, K=12),
+and moves the agreement with the calculation by up to about one percentage point. The out-of-sample selection additionally
 refuses any moment set that agrees with the calculation *worse than the unreweighted
 prior* on any validation distribution.
 
 The delivered per-event weights are re-derived from `lambda_export.json` alone and
 checked event-by-event against the pipeline's reference weights
 (`validate_shipped_weights.py`, `verify.py --prior ...`); the release fingerprints in
-`CODE_MD5.txt` and the exact diff to the production tree in `PROVENANCE.diff` tie
-this repository to the paper's runs.
+`CODE_MD5.txt` and the relation to the production tree recorded in `PROVENANCE.diff`
+tie this repository to the paper's runs.
 
 
 ## Paper figures

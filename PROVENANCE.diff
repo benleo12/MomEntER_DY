@@ -2,9 +2,15 @@
 # export stage (drop the moment with the largest stationarity residual, re-prune, retry, at most 3 rounds) is also
 # applied at the validation stage: run_pipeline.sh (PROG loop) and final_plots_pro.py (fit_lam, strict branch writes
 # fullfit_unconverged.json). Found by the fit-sample seed study (13.6 TeV, seed 7). No production run took this path.
-# Release provenance: this code is the production pipeline (dyfit/ps, fingerprint CODE_MD5_v5.txt +
-# validate_shipped_weights.py) with EXACTLY the following cosmetic diffs: three dead local-path
-# fallbacks removed. No physics line differs. Production hashes:
+# Release provenance: this code is the v5 production pipeline (dyfit/ps, fingerprint CODE_MD5_v5.txt +
+# validate_shipped_weights.py) plus the changes made after the production runs. The delivered lambdas
+# and per-event weights come from the v5 production code and are NOT affected by any of them.
+#   (a) cosmetic, listed in the diff below: three dead local-path fallbacks removed;
+#   (b) v5.1, the total-rate block: add_rate_block.py (new), apply_lambdas.py multiplies the weight by
+#       the rate factor K (K=1 when the JSON carries none, so the shape is unchanged), run_pipeline.sh
+#       step [7/7], verify.py reports the block;
+#   (c) v5.2, the validation-stage non-convergence remedy described above (run_pipeline.sh, final_plots_pro.py).
+# Hashes of the v5 production files these were derived from:
 #   20d160af660b44acdfa4c70beb3be3ba  optimizer_DY_unc.py
 #   a93eed87c3ac208161b1483a2ebbba8e  select_stable.py
 #   e6999a096201056218b6c76f1e9e2c2d  final_plots_pro.py
