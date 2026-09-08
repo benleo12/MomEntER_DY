@@ -123,7 +123,8 @@
    2000000000.0
   ],
   "combine": "w = w0*exp(logit - log_norm_shift) for ALL events (no hand-off to the prior at high qT)",
-  "why": "NLO POWHEG (no multijet merging): the high-qT tail is shower-only, nothing there is more accurate than the reweighting target"
+  "why": "NLO POWHEG (no multijet merging): the high-qT tail is shower-only, nothing there is more accurate than the reweighting target",
+  "multiplicity": "not applicable: this prior has a single hard emission, so there is no merging multiplicity to preserve; the set is delivered ungated."
  },
  "health": {
   "gate_lo": 120.0,

@@ -64,7 +64,8 @@ def features(names, rt, dphi):
     return np.column_stack(cols)
 
 
-def _apply(w0, qT, m_ll, dphi_ll, names, lam, C, gat, gate=True, w0_tail=None, K=1.0):
+def _apply(w0, qT, m_ll, dphi_ll, names, lam, C, gat, gate=True, w0_tail=None, K=1.0,
+           njet=None, njet_max=1):
     w0, qT, m_ll, dphi_ll = map(np.asarray, (w0, qT, m_ll, dphi_ll))
     logit = features(names, qT / m_ll, dphi_ll) @ np.asarray(lam)   # sum_k lambda_k phi_k
     w_rew = w0 * np.exp(logit - C)                       # event-local: fixed shift, no renorm
@@ -80,21 +81,40 @@ def _apply(w0, qT, m_ll, dphi_ll, names, lam, C, gat, gate=True, w0_tail=None, K
     # central prior in the tail (resummation is off there), the generator variations act
     # only in the tail, so the two tile the phase space without double counting.
     wt = w0 if w0_tail is None else np.asarray(w0_tail)
-    return K * (beta * w_rew + (1.0 - beta) * wt)
+    w = K * (beta * w_rew + (1.0 - beta) * wt)
+    return _restrict(w, K * w0, njet, njet_max)
 
 
-def reweight(w0, qT, m_ll, dphi_ll, energy="13TeV", jpath=None, gate=True, w0_tail=None, rate=True):
+def _restrict(w, w_prior, njet, njet_max):
+    """Multiplicity bound of the region of validity.  The weight is a function of qT and the
+    acoplanarity alone, so a three-jet event and a one-jet event at the same qT receive the same
+    factor.  Applying it at high multiplicity would erase what distinguishes them and would replace
+    the merged prediction's uncertainty, which grows with the number of jets, by one taken from a
+    calculation that has at most three hard partons.  Pass njet = the multiplicity of the hard
+    process (the generator's merging multiplicity, NOT the number of reconstructed jets) to give the
+    weight only to events with njet <= njet_max; the rest keep the prior.  The multipliers themselves
+    do not depend on the multiplicity, so the same file serves either choice.  Note that restricting
+    the application changes sum(w) by the share the higher multiplicities carry."""
+    if njet is None:
+        return w
+    return np.where(np.asarray(njet) <= njet_max, w, w_prior)
+
+
+def reweight(w0, qT, m_ll, dphi_ll, energy="13TeV", jpath=None, gate=True, w0_tail=None, rate=True, njet=None, njet_max=1):
     """Central reweighting. `energy` in {"13TeV","13p6TeV"}, or pass an explicit jpath.
     `w0_tail`: optional generator variation weight used in the tail branch of the
-    hand-off (e.g. one member of the sample's 7-point muR/muF variation set)."""
+    hand-off (e.g. one member of the sample's 7-point muR/muF variation set).
+    `njet`: optional per-event multiplicity of the hard process.  For a multi-jet merged prior,
+    pass it to apply the weight only to the 0-jet and 1-jet contributions (see _restrict)."""
     d = json.load(open(jpath or _default(energy)))
     K = (d.get('rate', {}).get('K') or 1.0) if rate else 1.0   # null K (rate not certified) -> 1
     return _apply(w0, qT, m_ll, dphi_ll, d['moments'],
-                  d['lambda_physical'], d['log_norm_shift'], d['gating'], gate, w0_tail, K)
+                  d['lambda_physical'], d['log_norm_shift'], d['gating'], gate, w0_tail, K,
+                  njet, njet_max)
 
 
 def reweight_scheme(w0, qT, m_ll, dphi_ll, scheme='central',
-                    energy="13TeV", jpath=None, gate=True, w0_tail=None, rate=True):
+                    energy="13TeV", jpath=None, gate=True, w0_tail=None, rate=True, njet=None, njet_max=1):
     """One scale/NP scheme (scheme='central','2MuR',...). Repeat over all schemes for the band.
     Full band with generator tail variations: envelope over the 29 theory schemes
     (w0_tail=None) union reweight(..., w0_tail=w0_V) for each generator variation V."""
@@ -102,7 +122,8 @@ def reweight_scheme(w0, qT, m_ll, dphi_ll, scheme='central',
     s = d['schemes'][scheme]
     K = (s.get('K') or d.get('rate', {}).get('K') or 1.0) if rate else 1.0
     return _apply(w0, qT, m_ll, dphi_ll, d['moments'],
-                  s['lambda_physical'], s['log_norm_shift'], d['gating'], gate, w0_tail, K)
+                  s['lambda_physical'], s['log_norm_shift'], d['gating'], gate, w0_tail, K,
+                  njet, njet_max)
 
 
 def schemes(energy="13TeV", jpath=None):

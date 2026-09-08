@@ -204,6 +204,14 @@ and moves the agreement with the calculation by up to about one percentage point
 refuses any moment set that agrees with the calculation *worse than the unreweighted
 prior* on any validation distribution.
 
+For a multi-jet merged prior the weight belongs to the 0-jet and 1-jet contributions
+only: it is a function of q_T and the acoplanarity, so at higher multiplicity it would
+erase what distinguishes a three-jet event from a one-jet event at the same q_T and
+would replace the merged prediction's uncertainty, which grows with the number of jets,
+by one from a calculation with at most three hard partons. Pass the multiplicity of the
+hard process to `reweight(..., njet=...)` to restrict it; the multipliers themselves do
+not depend on the multiplicity.
+
 The delivered per-event weights are re-derived from `lambda_export.json` alone and
 checked event-by-event against the pipeline's reference weights
 (`validate_shipped_weights.py`, `verify.py --prior ...`); the release fingerprints in

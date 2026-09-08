@@ -110,7 +110,8 @@
   "his_region_above": 200,
   "beta(qT)": "b = 1 - (6 t^5 - 15 t^4 + 10 t^3),  t = clip((qT-120)/80, 0, 1)   [1 below 120, 0 above 200]",
   "combine": "w = b*w_rew + (1-b)*w0*s_i ;  w_rew = w0*exp(logit - log_norm_shift) ;  s_i = your event-level tail factor (s_i=1 => revert to prior)",
-  "why": "qT=200 GeV is the edge of the N4LLp+N3LO prediction; q0=120 is where its theory-stat reaches ~5% (~size of the correction). taper systematic = 0.21x theory band."
+  "why": "qT=200 GeV is the edge of the N4LLp+N3LO prediction; q0=120 is where its theory-stat reaches ~5% (~size of the correction). taper systematic = 0.21x theory band.",
+  "multiplicity": "the merged prior carries matrix elements with up to six jets, and the weight depends only on qT and the acoplanarity, so a three-jet and a one-jet event at the same qT get the same factor. Apply the weight only to events whose hard process has 0 or 1 jet (the generator's merging multiplicity), so the higher-multiplicity predictions and their uncertainties are untouched. The multipliers do not depend on the multiplicity: apply_lambdas.reweight(..., njet=<per-event multiplicity>) does this, and restricting the application changes sum(w) by the share the higher multiplicities carry."
  },
  "health": {
   "gate_lo": 120.0,

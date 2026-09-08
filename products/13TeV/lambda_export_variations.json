@@ -66,7 +66,8 @@
    200
   ],
   "beta(qT)": "b = 1 - (6 t^5 - 15 t^4 + 10 t^3),  t = clip((qT-120)/80, 0, 1)",
-  "combine": "w = b*w_rew + (1-b)*w0*s_i  (above 200 -> prior, then your s_i)"
+  "combine": "w = b*w_rew + (1-b)*w0*s_i  (above 200 -> prior, then your s_i)",
+  "multiplicity": "the merged prior carries matrix elements with up to six jets, and the weight depends only on qT and the acoplanarity, so a three-jet and a one-jet event at the same qT get the same factor. Apply the weight only to events whose hard process has 0 or 1 jet (the generator's merging multiplicity), so the higher-multiplicity predictions and their uncertainties are untouched. The multipliers do not depend on the multiplicity: apply_lambdas.reweight(..., njet=<per-event multiplicity>) does this, and restricting the application changes sum(w) by the share the higher multiplicities carry."
  },
  "schemes": {
   "central": {
