@@ -69,8 +69,8 @@ def frames(n, figsize_one=(4.67, 4.68), gap=0.28, row=None):
     spans both columns of the End Matter). Panel contents and style are identical either way."""
     row = ROW if row is None else row
     if row and n > 1:
-        fig = plt.figure(figsize=(3.50 * n, 4.34))
-        outer = fig.add_gridspec(1, n, wspace=0.235, left=0.088 / (n / 2.0), right=0.988, top=0.935, bottom=0.112)
+        fig = plt.figure(figsize=(3.50 * n, 3.22))
+        outer = fig.add_gridspec(1, n, wspace=0.235, left=0.088 / (n / 2.0), right=0.988, top=0.915, bottom=0.148)
     else:
         fig = plt.figure(figsize=(figsize_one[0], figsize_one[1] * n))
         outer = fig.add_gridspec(n, 1, hspace=gap, left=0.1875, right=0.968, top=1 - 0.07 / n, bottom=0.11 / n)
@@ -86,9 +86,15 @@ def frames(n, figsize_one=(4.67, 4.68), gap=0.28, row=None):
 def decorate(ax, ar, title, ylab, rlab, xlab, notes=(), corner="lower left"):
     ax.set_ylabel(ylab, loc="top"); ar.set_ylabel(rlab); ar.set_xlabel(xlab, loc="right")
     ax.set_title(title, loc="left")
+    if ROW: notes = notes[:1]      # a short panel holds one in-panel line; the rest goes in the caption
     for k, txt in enumerate(notes):
-        if corner == "lower left": ax.text(0.04, 0.32 + 0.09 * (len(notes) - 1 - k), txt, transform=ax.transAxes, ha="left", va="bottom")
-        else:                      ax.text(0.96, 0.62 - 0.09 * k, txt, transform=ax.transAxes, ha="right", va="top")
+        if ROW:
+            # side-by-side panels are shorter, so the legend takes a larger fraction of the frame:
+            # keep the notes clear of it by putting them in the corner the legend does not use.
+            if corner == "lower left": ax.text(0.96, 0.96 - 0.10 * k, txt, transform=ax.transAxes, ha="right", va="top")
+            else:                      ax.text(0.04, 0.06 + 0.10 * (len(notes) - 1 - k), txt, transform=ax.transAxes, ha="left", va="bottom")
+        elif corner == "lower left": ax.text(0.04, 0.32 + 0.09 * (len(notes) - 1 - k), txt, transform=ax.transAxes, ha="left", va="bottom")
+        else:                        ax.text(0.96, 0.62 - 0.09 * k, txt, transform=ax.transAxes, ha="right", va="top")
 
 def steps(ax, e, y, **kw): ax.stairs(y, e, baseline=None, **kw)
 def bandfill(ax, e, lo, hi, color, alpha=0.30, hatch=None, **kw):
@@ -124,6 +130,7 @@ def draw(ax, ar, e, ref, ref_err, pri, rew, rlo, rhi, prior_label, ref_label, re
     ymin = np.nanmin(np.concatenate([ref[good], rew[has], pri[has]])); L = np.log10(ymin * 0.3)
     if np.ceil(L) - L < 0.35: L = np.ceil(L) - 0.6                         # keep the lowest decade label clear of the ratio panel's 1.4
     ax.set_ylim(10**L, np.nanmax(ref[good]) * 4)
+    if ROW: _lo, _hi = ax.get_ylim(); ax.set_ylim(_lo, _hi * 120)   # headroom so the legend clears the spectrum
     if corner == "lower left": legend_first(ax, ref_label, alignment="left", loc="lower left", bbox_to_anchor=(0.01, 0.01), markerfirst=True)
     else:                      legend_first(ax, ref_label, alignment="right", loc="upper right", bbox_to_anchor=(1.0, 0.97), markerfirst=False)
     if ref_band is not None: ar.legend(loc="lower right", ncol=2, fontsize=8, handlelength=1.6, markerfirst=False)
@@ -139,9 +146,11 @@ DATA_LABEL = "ATLAS Data, EPJC80(2020)616"
 def rew_label_for(prior_label): return r"N$^4$LL$^\prime$+N$^3$LO+POWHEG" if "POWHEG" in prior_label else r"N$^4$LL$^\prime$+N$^3$LO+MEPS@NLO"
 
 def fid_one(ax, ar, z, key, prior_label):
-    e = z[f"{key}_edges"]; decorate(ax, ar, FID_TITLE[key], FID[key]["yl"], "Theory~/~Data", FID[key]["xl"], notes=FID_NOTES)
+    e = z[f"{key}_edges"]; corner = "upper right" if ROW else "lower left"   # with the row-mode headroom the upper right is free
+    decorate(ax, ar, FID_TITLE[key], FID[key]["yl"], "Theory~/~Data", FID[key]["xl"], notes=FID_NOTES, corner=corner)
     return draw(ax, ar, e, z[f"{key}_dat"], z[f"{key}_err"], z[f"{key}_pri"], z[f"{key}_rew"], z[f"{key}_rlo"], z[f"{key}_rhi"],
-                prior_label, DATA_LABEL, xlo=FID[key]["xlo"], rew_label=rew_label_for(prior_label), xhi=(900.0 if key == "qt" else None))
+                prior_label, DATA_LABEL, xlo=FID[key]["xlo"], rew_label=rew_label_for(prior_label), corner=corner,
+                xhi=(900.0 if key == "qt" else None))
 
 def fid(npz, pre, prior_label="POWHEG Prior"):
     z = np.load(npz); res = {}
@@ -174,7 +183,9 @@ def thy_hists(z, key):
 def thy_one(ax, ar, z, key, prior_label, title):
     schs = [str(s) for s in z["schemes"]]; e, H, T, tot = thy_hists(z, key)
     pri = dens(H[:, 0], e, tot[0]); rew, rlo, rhi = scheme_band(H, e, schs, tot)
-    corner = "upper right" if key == "d" else "lower left"
+    # in the side-by-side layout the panels are short: put the legend in the upper right, which is
+    # free for every falling spectrum here, and the in-panel notes in the opposite corner.
+    corner = "upper right" if (ROW or key == "d") else "lower left"
     decorate(ax, ar, THY_TITLE[key], THY[key]["yl"], "Ratio to calculation", THY[key]["xl"], notes=(title, r"$m_{ll}\geq 40$ GeV"), corner=corner)
     return draw(ax, ar, e, T["cen"], 0.5 * (T["sthi"] - T["stlo"]), pri, rew, rlo, rhi, prior_label, THY_LABEL,
                 ref_band=(T["slo"], T["shi"]), ref_hatch=(T["stlo"], T["sthi"]), xscale=THY[key]["xs"], xlo=THY[key]["xlo"], rew_label=rew_label_for(prior_label), corner=corner)

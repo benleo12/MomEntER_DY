@@ -10,7 +10,7 @@
 set -e; cd "$(dirname "$0")"; mkdir -p out
 STACK=q,r,d python rivet_style.py thy data/H_13TeV.npz        out/sherpa_13TeV   "MEPS@NLO Prior" '$pp\to l^+l^-$, $\sqrt{s}=13$ TeV'
 STACK=q,r,d python rivet_style.py thy data/H_13p6TeV.npz      out/sherpa_13p6TeV "MEPS@NLO Prior" '$pp\to l^+l^-$, $\sqrt{s}=13.6$ TeV'
-STACK=q,d python rivet_style.py thy data/H_13TeV_powheg.npz out/powheg_13TeV "POWHEG Prior" '$pp\to l^+l^-$, $\sqrt{s}=13$ TeV'     # End Matter Fig. 4
-python rivet_style.py fid data/FIG_ATLASFID_powheg.npz out/powheg_atlasfid                                                         # End Matter Fig. 5
+ROW=1 STACK=q,d python rivet_style.py thy data/H_13TeV_powheg.npz out/powheg_13TeV "POWHEG Prior" '$pp\to l^+l^-$, $\sqrt{s}=13$ TeV'   # End Matter Fig. 3: panels side by side, spans both columns
+ROW=1 python rivet_style.py fid data/FIG_ATLASFID_powheg.npz out/powheg_atlasfid                                                   # End Matter Fig. 4: side by side
 python make_fig1_rivet.py out/fig_calc_vs_atlas.pdf                                                                                # Fig. 3
 echo "figures written to figs/out/"
