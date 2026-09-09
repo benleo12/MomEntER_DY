@@ -150,158 +150,159 @@
   "phase_space": "inclusive, m_ll >= 40 GeV, all lepton rapidities (the calculation's normalization moment); the prior sample is generated with the same mass cut",
   "sigma_calc_pb": 2007.9843963526,
   "sigma_calc_mc_unc_pb": 4.742056144667971,
-  "sigma_prior_pb": 2152.0567071541723,
-  "sigma_prior_source": "mean of the stored per-event weights, which are in pb (sigma = sum w / N)",
+  "sigma_prior_pb": 2050.2652143897826,
+  "sigma_prior_source": "sum of the stored per-event weights (1.04641e+11 pb) divided by the number of showered events (51,037,880), not by the 48,623,807 events that pass m_ll > 40 GeV. POWHEG unweighted events all carry the same |w| = sigma_gen, so the mean over a cut subset returns the generation cross section (2152.06 pb, for the m_ll > 35 GeV generation cut) rather than the cross section of the selection.",
   "prior_n_events": 48623807,
   "prior_mean_stored_weight": 2152.0567071541723,
-  "K": 0.9330536642818813,
+  "K": 0.9793778786566564,
   "per_scheme": {
    "0p5C0_np": {
     "sigma_calc_pb": 2008.4013770282425,
     "sigma_calc_mc_unc_pb": 4.747244003392342,
-    "K": 0.9332474234306325
+    "K": 0.9795812575525747
    },
    "0p5kappa_np": {
     "sigma_calc_pb": 2007.6121179019856,
     "sigma_calc_mc_unc_pb": 4.734543621801044,
-    "K": 0.9328806769951723
+    "K": 0.9791963029034311
    },
    "0p5MuBeam": {
     "sigma_calc_pb": 2010.3137400711237,
     "sigma_calc_mc_unc_pb": 4.833682194041123,
-    "K": 0.9341360445513138
+    "K": 0.9805139969023229
    },
    "0p5MuBF": {
     "sigma_calc_pb": 2013.553588341662,
     "sigma_calc_mc_unc_pb": 4.788067426209308,
-    "K": 0.9356415105828398
+    "K": 0.9820942062566052
    },
    "0p5MuCt": {
     "sigma_calc_pb": 2007.8964975768731,
     "sigma_calc_mc_unc_pb": 4.738041419920033,
-    "K": 0.9330128202021529
+    "K": 0.9793350067515438
    },
    "0p5MuFac": {
     "sigma_calc_pb": 2015.576024140402,
     "sigma_calc_mc_unc_pb": 4.756079637587328,
-    "K": 0.9365812794058531
+    "K": 0.9830806326879495
    },
    "0p5MuFtran": {
     "sigma_calc_pb": 2010.4124525909524,
     "sigma_calc_mc_unc_pb": 4.8131620027214685,
-    "K": 0.9341819134726581
+    "K": 0.980562143122205
    },
    "0p5MuHard": {
     "sigma_calc_pb": 2008.7049199582464,
     "sigma_calc_mc_unc_pb": 4.739649526731754,
-    "K": 0.9333884712612937
+    "K": 0.9797293081208005
    },
    "0p5MuSoft": {
     "sigma_calc_pb": 2006.6084686371094,
     "sigma_calc_mc_unc_pb": 4.734267936896943,
-    "K": 0.932414309514455
+    "K": 0.9787067812270001
    },
    "0p5NuBeam": {
     "sigma_calc_pb": 2008.8932983289499,
     "sigma_calc_mc_unc_pb": 4.737260180615967,
-    "K": 0.9334760053723035
+    "K": 0.9798211881221688
    },
    "0p5NuSoft": {
     "sigma_calc_pb": 2007.3679938575165,
     "sigma_calc_mc_unc_pb": 4.728444536970992,
-    "K": 0.9327672394432447
+    "K": 0.9790772334080527
    },
    "2C0_np": {
     "sigma_calc_pb": 2007.709012953835,
     "sigma_calc_mc_unc_pb": 4.735024269764601,
-    "K": 0.932925701390453
+    "K": 0.9792435626682505
    },
    "2kappa_np": {
     "sigma_calc_pb": 2008.5453281132718,
     "sigma_calc_mc_unc_pb": 4.735874091868877,
-    "K": 0.9333143134361565
+    "K": 0.9796514685106591
    },
    "2MuBeam": {
     "sigma_calc_pb": 2009.4182031314135,
     "sigma_calc_mc_unc_pb": 4.72086686162366,
-    "K": 0.9337199138161278
+    "K": 0.9800772061235373
    },
    "2MuBF": {
     "sigma_calc_pb": 2006.5138035370503,
     "sigma_calc_mc_unc_pb": 4.750923386106215,
-    "K": 0.9323703213148206
+    "K": 0.9786606091028306
    },
    "2MuCt": {
     "sigma_calc_pb": 2007.728543426799,
     "sigma_calc_mc_unc_pb": 4.745285246366679,
-    "K": 0.932934776649901
+    "K": 0.9792530884958491
    },
    "2MuFac": {
     "sigma_calc_pb": 2004.323039101307,
     "sigma_calc_mc_unc_pb": 4.777360421767776,
-    "K": 0.9313523349260509
+    "K": 0.9775920817628712
    },
    "2MuFtran": {
     "sigma_calc_pb": 2007.0717485776743,
     "sigma_calc_mc_unc_pb": 4.977749554395859,
-    "K": 0.9326295826246035
+    "K": 0.9789327422086884
    },
    "2MuHard": {
     "sigma_calc_pb": 2006.7482632171723,
     "sigma_calc_mc_unc_pb": 4.741981997508144,
-    "K": 0.9324792681094578
+    "K": 0.978774964883964
    },
    "2MuSoft": {
     "sigma_calc_pb": 2010.5642441058626,
     "sigma_calc_mc_unc_pb": 4.73377259481485,
-    "K": 0.934252446704615
+    "K": 0.9806361781854958
    },
    "2NuBeam": {
     "sigma_calc_pb": 2007.3835101246643,
     "sigma_calc_mc_unc_pb": 4.728170396679047,
-    "K": 0.9327744494145694
+    "K": 0.9790848013397715
    },
    "2NuSoft": {
     "sigma_calc_pb": 2008.8876377057463,
     "sigma_calc_mc_unc_pb": 4.7372847592290075,
-    "K": 0.9334733750404982
+    "K": 0.9798184271997458
    },
    "0p5MuF": {
     "sigma_calc_pb": 2004.3867575246486,
     "sigma_calc_mc_unc_pb": 5.718036132489221,
-    "K": 0.9313819430786288
+    "K": 0.9776231598999309
    },
    "0p5MuRF": {
     "sigma_calc_pb": 2011.9770108813962,
     "sigma_calc_mc_unc_pb": 6.519138577703202,
-    "K": 0.9349089195432893
+    "K": 0.9813252435637786
    },
    "0p5MuR": {
     "sigma_calc_pb": 2008.5988310601876,
     "sigma_calc_mc_unc_pb": 6.307043036840378,
-    "K": 0.9333391747452185
+    "K": 0.9796775641330889
    },
    "2MuF": {
     "sigma_calc_pb": 2011.5509361852771,
     "sigma_calc_mc_unc_pb": 5.415405479503498,
-    "K": 0.9347109346599437
+    "K": 0.9811174291341485
    },
    "2MuRF": {
     "sigma_calc_pb": 2004.914720777687,
     "sigma_calc_mc_unc_pb": 5.819489664951513,
-    "K": 0.9316272726980962
+    "K": 0.9778806696354193
    },
    "2MuR": {
     "sigma_calc_pb": 1996.5285350687661,
     "sigma_calc_mc_unc_pb": 5.950089107236106,
-    "K": 0.927730448938275
+    "K": 0.9737903765113578
    },
    "central": {
     "sigma_calc_pb": 2007.9843963526,
     "sigma_calc_mc_unc_pb": 4.742056144667971,
-    "K": 0.9330536642818813
+    "K": 0.9793778786566564
    }
   },
-  "sigma_calc_definition": "integral of the tabulated N4LL'+N3LO calculation over its full range (the g0 moment, dphi^0 x lndphi^0): m_ll >= 40 GeV, all lepton rapidities, one lepton flavour, QCD only. Cross-check: integrating the tabulated rT density reproduces it to 0.1%. Compare sigma_prior in the SAME phase space before forming K."
+  "sigma_calc_definition": "integral of the tabulated N4LL'+N3LO calculation over its full range (the g0 moment, dphi^0 x lndphi^0): m_ll >= 40 GeV, all lepton rapidities, one lepton flavour, QCD only. Cross-check: integrating the tabulated rT density reproduces it to 0.1%. Compare sigma_prior in the SAME phase space before forming K.",
+  "prior_n_generated": 51037880
  }
 }

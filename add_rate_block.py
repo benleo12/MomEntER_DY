@@ -24,7 +24,8 @@ ap = argparse.ArgumentParser()
 ap.add_argument("energy")
 ap.add_argument("--sigma-prior", type=float, default=None, help="prior total cross section in pb (overrides the mean stored weight)")
 ap.add_argument("--mom", default=None); ap.add_argument("--prior", default=None)
-ap.add_argument("--prior-weights-are-pb", action="store_true", help="the stored per-event weights are in pb (sigma = mean weight); without this flag or --sigma-prior, K is left null")
+ap.add_argument("--prior-weights-are-pb", action="store_true", help="the stored per-event weights are in pb (sigma = sum of weights / number GENERATED); without this flag or --sigma-prior, K is left null")
+ap.add_argument("--prior-n-generated", type=int, default=None, help="number of events the prior sample was generated/showered from, when the stored file holds only those passing a cut. POWHEG unweighted events all carry the same |w| = sigma_gen, so the MEAN over a cut subset returns the generation cross section, not the cross section of the selection: sigma = sum(w)/N_generated is the right estimator. Defaults to the number of stored events.")
 a = ap.parse_args()
 E = a.energy
 MOM = a.mom or f"moments_{E}"; PRIOR = a.prior or f"sherpa_prior_{E}"
@@ -45,10 +46,14 @@ Z, dZ = sig["central"], unc["central"]
 import pandas as pd
 w = pd.read_csv(f"{PRIOR}/pT_weight.csv.gz", header=None, low_memory=False).iloc[:, 0].to_numpy(dtype=float)
 N = int(len(w)); mean_w = float(w.mean())
+NGEN = a.prior_n_generated or N
 if a.sigma_prior is not None:
     sp, sp_src = a.sigma_prior, "user-supplied total cross section of the prior sample"
 elif a.prior_weights_are_pb:
-    sp, sp_src = mean_w, "mean of the stored per-event weights, which are in pb (sigma = sum w / N)"
+    sp = float(w.sum()) / NGEN
+    sp_src = (f"stored per-event weights in pb: sigma = sum(w)/N_generated = {w.sum():.6g}/{NGEN:,}"
+              + ("" if NGEN == N else f"; the file holds {N:,} events passing the analysis cut, so dividing by N "
+                                      "instead would return the generation cross section, not the cross section of the selection"))
 else:
     sp, sp_src = None, ("not set: the stored per-event weights are not certified to be in pb; supply --sigma-prior "
                         "(the sample's total cross section in pb for m_ll >= 40 GeV) to obtain K")
@@ -66,7 +71,7 @@ block = {
                     "Per scheme use per_scheme[s].K with schemes[s] of lambda_export_variations.json."),
     "phase_space": "inclusive, m_ll >= 40 GeV, all lepton rapidities (the calculation's normalization moment); the prior sample is generated with the same mass cut",
     "sigma_calc_pb": Z, "sigma_calc_mc_unc_pb": dZ,
-    "sigma_prior_pb": sp, "sigma_prior_source": sp_src, "prior_n_events": N, "prior_mean_stored_weight": mean_w,
+    "sigma_prior_pb": sp, "sigma_prior_source": sp_src, "prior_n_events": N, "prior_n_generated": NGEN, "prior_mean_stored_weight": mean_w,
     "K": K,
     "per_scheme": per,
 }
