@@ -834,7 +834,7 @@
   "sigma_calc_pb": 2007.9843963526,
   "sigma_calc_mc_unc_pb": 4.742056144667971,
   "sigma_prior_pb": 2050.2652143897826,
-  "sigma_prior_source": "sum of the stored per-event weights (1.04641e+11 pb) divided by the number of showered events (51,037,880), not by the 48,623,807 events that pass m_ll > 40 GeV. POWHEG unweighted events all carry the same |w| = sigma_gen, so the mean over a cut subset returns the generation cross section (2152.06 pb, for the m_ll > 35 GeV generation cut) rather than the cross section of the selection.",
+  "sigma_prior_source": "sum of the stored per-event weights (1.04641e+11 pb) divided by the number of showered events (51,037,880), not by the 48,623,807 events that pass m_ll > 40 GeV. POWHEG unweighted events all carry the same |w| = sigma_gen, so the mean over a cut subset returns the generation cross section (2152.06 pb, for the m_ll > 35 GeV generation cut) rather than the cross section of the selection. The denominator is the 51,037,880 events actually showered; using the 51,200,000 generated (128 seeds x 400k in the run card) gives 2043.77 pb and K = 0.98249 instead, so the rate carries a 0.3% bookkeeping ambiguity. Cross-checks: the generation window is m_ll > 35 GeV (mass_low 35) and the m_ll > 40 GeV cut is applied in the shower hook before the event is written; the stored weights take a single magnitude, 0.123% of them negative.",
   "prior_n_events": 48623807,
   "prior_mean_stored_weight": 2152.0567071541723,
   "K": 0.9793778786566564,
