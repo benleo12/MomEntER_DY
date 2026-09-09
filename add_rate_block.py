@@ -22,7 +22,7 @@ import numpy as np
 
 ap = argparse.ArgumentParser()
 ap.add_argument("energy")
-ap.add_argument("--sigma-prior", type=float, default=None, help="prior total cross section in pb (overrides the mean stored weight)")
+ap.add_argument("--sigma-prior", type=float, default=None, help="prior total cross section in pb (overrides the mean stored weight). For a Sherpa sample this is sum(weights)/sum(trials), the number the run log reports; the trials count is much larger than one because of the cut efficiency, so the mean stored weight is not a cross section.")
 ap.add_argument("--mom", default=None); ap.add_argument("--prior", default=None)
 ap.add_argument("--prior-weights-are-pb", action="store_true", help="the stored per-event weights are in pb (sigma = sum of weights / number GENERATED); without this flag or --sigma-prior, K is left null")
 ap.add_argument("--prior-n-generated", type=int, default=None, help="number of events the prior sample was generated/showered from, when the stored file holds only those passing a cut. POWHEG unweighted events all carry the same |w| = sigma_gen, so the MEAN over a cut subset returns the generation cross section, not the cross section of the selection: sigma = sum(w)/N_generated is the right estimator. Defaults to the number of stored events.")

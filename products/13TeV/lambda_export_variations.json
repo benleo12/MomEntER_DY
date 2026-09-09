@@ -744,7 +744,7 @@
   "sigma_calc_pb": 2007.9843963526,
   "sigma_calc_mc_unc_pb": 4.742056144667971,
   "sigma_prior_pb": null,
-  "sigma_prior_source": "not set: the stored per-event weights are not certified to be in pb; supply --sigma-prior (the sample's total cross section in pb for m_ll >= 40 GeV) to obtain K",
+  "sigma_prior_source": "not set: this sample's cross section is sum(weights)/sum(trials), the Sherpa convention. The trials count is much larger than one because of the cut efficiency, and it was not dumped into these CSVs, so the rate cannot be recovered from the stored weights: their mean, 15011 pb, is the weight sum divided by the event count and is meaningless as a cross section. Take sigma from the Sherpa run log (or from a dump that carries the trials column: on an earlier prior of ours that has it, sum(w)/sum(trials) = 2148.78 pb) and pass it with add_rate_block.py <tag> --sigma-prior <pb>. Histograms and moments are unaffected: the trials sum is a global factor that cancels in every ratio, and the per-event weight in a histogram is w, never w/trials.",
   "prior_n_events": 51200000,
   "prior_mean_stored_weight": 15011.050657744134,
   "K": null,
