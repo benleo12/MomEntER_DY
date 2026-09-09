@@ -9,7 +9,7 @@ e00c88a94de73e894a441c1c65a84113  health_shrink.py
 9a2321daa5f2496ca5966975df7b6f14  check_smallqt.py
 4cabd80ec80f3718251f2e8427a3ac87  final_plots_pro.py
 cc083f895fe8ac63620f4553c65b87fc  validate_shipped_weights.py
-3c1a18232cfd543cfaf5cb12b6f608ec  apply_lambdas.py
+a1b27cf1aa6eaa59b52a5de31a476cec  apply_lambdas.py
 7106137b0e588969ed2e7669e64631ee  verify.py
 e29318189915eb783713eb06e95c9463  add_rate_block.py
 # v5.2 (2026-09-05): validation-stage non-convergence remedy (run_pipeline.sh PROG loop, final_plots_pro.py fit_lam strict branch names the offenders). Production paths and all delivered products unchanged; production hashes of v5 are recorded in PROVENANCE.diff.

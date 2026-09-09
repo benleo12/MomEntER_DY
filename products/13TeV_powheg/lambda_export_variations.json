@@ -829,7 +829,7 @@
   }
  },
  "rate": {
-  "description": "Overall rate normalization. The MaxEnt weight preserves the prior's normalization (sum w = sum w0) and transfers only the shape; multiply every weight (central branch and tail branch alike) by K to normalize the sample to the calculation's total rate. Per scheme use per_scheme[s].K with schemes[s] of lambda_export_variations.json.",
+  "description": "Overall rate normalization. The MaxEnt weight preserves the prior's normalization (sum w = sum w0) and transfers only the shape; K = sigma_calc / sigma_prior sets the absolute scale. Every fitted moment is normalized by the total rate, so K does not enter the fit and changes no normalized distribution. Apply it where the calculation is in control: apply_lambdas multiplies the reweighted branch by K and leaves the generator's tail above the hand-off untouched (rate_tail=True scales every event instead). The total rate of the sample is then K x (bulk) + (tail). Per scheme use per_scheme[s].K with schemes[s] of lambda_export_variations.json.",
   "phase_space": "inclusive, m_ll >= 40 GeV, all lepton rapidities (the calculation's normalization moment); the prior sample is generated with the same mass cut",
   "sigma_calc_pb": 2007.9843963526,
   "sigma_calc_mc_unc_pb": 4.742056144667971,
@@ -984,6 +984,7 @@
     "sigma_calc_mc_unc_pb": 4.742056144667971,
     "K": 0.9330536642818813
    }
-  }
+  },
+  "sigma_calc_definition": "integral of the tabulated N4LL'+N3LO calculation over its full range (the g0 moment, dphi^0 x lndphi^0): m_ll >= 40 GeV, all lepton rapidities, one lepton flavour, QCD only. Cross-check: integrating the tabulated rT density reproduces it to 0.1%. Compare sigma_prior in the SAME phase space before forming K."
  }
 }

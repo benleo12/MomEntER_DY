@@ -65,7 +65,7 @@ def features(names, rt, dphi):
 
 
 def _apply(w0, qT, m_ll, dphi_ll, names, lam, C, gat, gate=True, w0_tail=None, K=1.0,
-           njet=None, njet_max=1):
+           njet=None, njet_max=1, rate_tail=False):
     w0, qT, m_ll, dphi_ll = map(np.asarray, (w0, qT, m_ll, dphi_ll))
     logit = features(names, qT / m_ll, dphi_ll) @ np.asarray(lam)   # sum_k lambda_k phi_k
     w_rew = w0 * np.exp(logit - C)                       # event-local: fixed shift, no renorm
@@ -81,8 +81,14 @@ def _apply(w0, qT, m_ll, dphi_ll, names, lam, C, gat, gate=True, w0_tail=None, K
     # central prior in the tail (resummation is off there), the generator variations act
     # only in the tail, so the two tile the phase space without double counting.
     wt = w0 if w0_tail is None else np.asarray(w0_tail)
-    w = K * (beta * w_rew + (1.0 - beta) * wt)
-    return _restrict(w, K * w0, njet, njet_max)
+    # The rate factor belongs where the calculation is in control.  Above the hand-off the sample is
+    # the generator's, and its rate there is set by the Z+jets matrix elements, not by an inclusive
+    # K-factor, so by default K multiplies the reweighted branch only (rate_tail=False).  The total
+    # rate of the sample is then K x (bulk) + (tail) rather than sigma_calc.  rate_tail=True restores
+    # the older behaviour of scaling every event.  Both agree when there is no hand-off (POWHEG,
+    # delivered ungated) or when K is 1.
+    w = (K * beta) * w_rew + (1.0 - beta) * (K * wt if rate_tail else wt)
+    return _restrict(w, (K if rate_tail else 1.0) * w0, njet, njet_max)
 
 
 def _restrict(w, w_prior, njet, njet_max):
@@ -100,21 +106,23 @@ def _restrict(w, w_prior, njet, njet_max):
     return np.where(np.asarray(njet) <= njet_max, w, w_prior)
 
 
-def reweight(w0, qT, m_ll, dphi_ll, energy="13TeV", jpath=None, gate=True, w0_tail=None, rate=True, njet=None, njet_max=1):
+def reweight(w0, qT, m_ll, dphi_ll, energy="13TeV", jpath=None, gate=True, w0_tail=None, rate=True, njet=None, njet_max=1, rate_tail=False):
     """Central reweighting. `energy` in {"13TeV","13p6TeV"}, or pass an explicit jpath.
     `w0_tail`: optional generator variation weight used in the tail branch of the
     hand-off (e.g. one member of the sample's 7-point muR/muF variation set).
     `njet`: optional per-event multiplicity of the hard process.  For a multi-jet merged prior,
-    pass it to apply the weight only to the 0-jet and 1-jet contributions (see _restrict)."""
+    pass it to apply the weight only to the 0-jet and 1-jet contributions (see _restrict).
+    `rate_tail`: by default the rate factor K is applied only where the calculation is in control
+    (the reweighted branch); set True to scale every event, including the generator's tail."""
     d = json.load(open(jpath or _default(energy)))
     K = (d.get('rate', {}).get('K') or 1.0) if rate else 1.0   # null K (rate not certified) -> 1
     return _apply(w0, qT, m_ll, dphi_ll, d['moments'],
                   d['lambda_physical'], d['log_norm_shift'], d['gating'], gate, w0_tail, K,
-                  njet, njet_max)
+                  njet, njet_max, rate_tail)
 
 
 def reweight_scheme(w0, qT, m_ll, dphi_ll, scheme='central',
-                    energy="13TeV", jpath=None, gate=True, w0_tail=None, rate=True, njet=None, njet_max=1):
+                    energy="13TeV", jpath=None, gate=True, w0_tail=None, rate=True, njet=None, njet_max=1, rate_tail=False):
     """One scale/NP scheme (scheme='central','2MuR',...). Repeat over all schemes for the band.
     Full band with generator tail variations: envelope over the 29 theory schemes
     (w0_tail=None) union reweight(..., w0_tail=w0_V) for each generator variation V."""
@@ -123,7 +131,7 @@ def reweight_scheme(w0, qT, m_ll, dphi_ll, scheme='central',
     K = (s.get('K') or d.get('rate', {}).get('K') or 1.0) if rate else 1.0
     return _apply(w0, qT, m_ll, dphi_ll, d['moments'],
                   s['lambda_physical'], s['log_norm_shift'], d['gating'], gate, w0_tail, K,
-                  njet, njet_max)
+                  njet, njet_max, rate_tail)
 
 
 def schemes(energy="13TeV", jpath=None):

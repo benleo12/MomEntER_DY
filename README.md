@@ -204,6 +204,15 @@ and moves the agreement with the calculation by up to about one percentage point
 refuses any moment set that agrees with the calculation *worse than the unreweighted
 prior* on any validation distribution.
 
+The rate factor `rate.K` sets the absolute scale, `sigma_calc / sigma_prior`. Every fitted
+moment is normalised by the total rate, so `K` never enters the fit and changes no normalised
+distribution. It is applied where the calculation is in control: `reweight()` multiplies the
+reweighted branch and leaves the generator's tail above the hand-off alone (`rate_tail=True`
+scales every event). `rate.sigma_calc_pb` and `rate.per_scheme[s].sigma_calc_pb` ship for every
+setup; `K` is filled in only where the prior's cross section is known in the same units (POWHEG),
+and for the Sherpa setups you supply it with `add_rate_block.py <tag> --sigma-prior <pb>`.
+Compare cross sections in the same phase space first: `rate.sigma_calc_definition` states it.
+
 For a multi-jet merged prior the weight belongs to the 0-jet and 1-jet contributions
 only: it is a function of q_T and the acoplanarity, so at higher multiplicity it would
 erase what distinguishes a three-jet event from a one-jet event at the same q_T and
