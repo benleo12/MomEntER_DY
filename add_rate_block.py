@@ -43,11 +43,27 @@ assert "central" in sig, "normalization moment (dphi^0 x lndphi^0, CV/CV) not fo
 Z, dZ = sig["central"], unc["central"]
 
 # --- prior: mean stored event weight -------------------------------------------------------
-import pandas as pd
+import pandas as pd, os as _os
 w = pd.read_csv(f"{PRIOR}/pT_weight.csv.gz", header=None, low_memory=False).iloc[:, 0].to_numpy(dtype=float)
 N = int(len(w)); mean_w = float(w.mean())
+# Sherpa: sigma = sum(weights) / sum(trials).  The trials count is much larger than one because of the
+# cut efficiency and the enhancement, so the mean stored weight is NOT a cross section.  When the dump
+# carries the trials column we compute sigma from it and there is nothing to supply by hand.
+_tf = f"{PRIOR}/pT_trials.csv.gz"
+sigma_trials = None
+if _os.path.exists(_tf):
+    t = pd.read_csv(_tf, header=None, low_memory=False).iloc[:, 0].to_numpy(dtype=float)
+    assert len(t) == N, f"trials rows {len(t)} != weight rows {N}"
+    sigma_trials = float(w.sum() / t.sum())
+    print(f"  [{E}] trials column found: sum(w)/sum(trials) = {sigma_trials:.2f} pb  (<trials> = {t.sum()/N:.1f}, mean w = {mean_w:.2f})")
 NGEN = a.prior_n_generated or N
-if a.sigma_prior is not None:
+if a.sigma_prior is None and sigma_trials is not None:
+    sp, sp_src = sigma_trials, (f"sum(weights)/sum(trials) = {sigma_trials:.4f} pb, the Sherpa convention, computed from "
+                                f"{PRIOR}/pT_trials.csv.gz. This is the cross section of the sample AS GENERATED, so K = "
+                                "sigma_calc/sigma_prior normalises the whole sample, multi-jet contributions included. To "
+                                "correct only the contributions the weight acts on, divide instead by the fixed-order rate "
+                                "of the same setup (see sigma_prior_fixed_order_pb when present).")
+elif a.sigma_prior is not None:
     sp, sp_src = a.sigma_prior, "user-supplied total cross section of the prior sample"
 elif a.prior_weights_are_pb:
     sp = float(w.sum()) / NGEN
