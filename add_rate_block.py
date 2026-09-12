@@ -87,7 +87,7 @@ block = {
                     "Per scheme use per_scheme[s].K with schemes[s] of lambda_export_variations.json."),
     "phase_space": "inclusive, m_ll >= 40 GeV, all lepton rapidities (the calculation's normalization moment); the prior sample is generated with the same mass cut",
     "sigma_calc_pb": Z, "sigma_calc_mc_unc_pb": dZ,
-    "sigma_prior_pb": sp, "sigma_prior_source": sp_src, "prior_n_events": N, "prior_n_generated": NGEN, "prior_mean_stored_weight": mean_w,
+    "sigma_prior_pb": sp, "sigma_prior_source": sp_src, "prior_n_events": N, "prior_n_generated": NGEN,
     "K": K,
     "per_scheme": per,
 }

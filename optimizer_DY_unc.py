@@ -1384,7 +1384,7 @@ def optimize_newton(model, max_steps=50, tol=1e-8, verbose=True):
     # negative-weight chute and every pull explodes while the Armijo line search (12 halvings from
     # alpha=1, loss-based) accepts it.  Capping the step changes the path, never the optimum.
     import os as _os0
-    _LSTEP = float(_os0.environ.get('LOGIT_STEP', '5.0')); _ncap = 0
+    _LSTEP = float(_os0.environ.get('LOGIT_STEP', '5.0')); _ncap = 0; _ndamp = 0
     accepted_steps = 0; reason = 'maxsteps'   # -> model.fit_status (see end of function)
 
     print(f"\n[Newton Optimization: {K} constraints, tol={tol}]")
@@ -1411,28 +1411,45 @@ def optimize_newton(model, max_steps=50, tol=1e-8, verbose=True):
         # lm stays ~0 (pure Newton, α=1 — identical to before); on collinear/ill-conditioned
         # sets lm grows so the direction is always usable, avoiding the 30× line-search
         # backtracking that made cold fits thrash. Same convex optimum, faster & robust path.
-        diagH = np.maximum(np.diag(hess), 1e-30)
+        # Damping scale: Marquardt scaling by the Hessian diagonal, floored at a small positive fraction
+        # of its largest entry.  With a 1e-30 floor a zero or negative diagonal entry (signed weights:
+        # 13.6 TeV p-3 admitted set, diag min -7.6e-6) received no damping at all, whatever lm.
+        _dmax = float(np.max(np.abs(np.diag(hess))))
+        diagH = np.maximum(np.diag(hess), 1e-6 * max(_dmax, 1e-300))
         c1 = 1e-4
         accepted = False
         for _try in range(12):
-            try:
-                dlam = np.linalg.solve(hess + (lm + 1e-12) * np.diag(diagH), -grad)
-            except np.linalg.LinAlgError:
+            # Direction search: raise the damping and re-solve while the step is an ascent direction or
+            # would move some event's log-weight by more than the cap.  Kept separate from the acceptance
+            # attempts below: when the re-solves were 'continue's of the same loop they used up nine of
+            # the twelve attempts before any line search ran, and fits stalled after ten steps.
+            dlam = None; alpha = 1.0; slope = 0.0
+            for _d in range(10):
+                try:
+                    cand = np.linalg.solve(hess + (lm + 1e-12) * np.diag(diagH), -grad)
+                except np.linalg.LinAlgError:
+                    lm = max(lm * 10.0, 1e-6); continue
+                slope = grad @ cand
+                if slope > 0:                          # not a descent direction -> damp more
+                    lm = max(lm * 10.0, 1e-6); continue
+                dlam = cand
+                if _LSTEP > 0 and hasattr(model, 'max_logit_change'):
+                    _mx = model.max_logit_change(cand)
+                    if _mx > _LSTEP:
+                        lm = max(lm * 10.0, 1e-6); _ndamp += 1
+                        if _d < 9: dlam = None; continue
+                        alpha = _LSTEP / _mx; _ncap += 1   # damping alone cannot bring it inside: scalar cap as the last resort
+                break
+            if dlam is None:                           # no usable direction at any damping level
                 lm = max(lm * 10.0, 1e-6); continue
-            slope = grad @ dlam
-            if slope > 0:                          # not a descent direction -> damp more
-                lm = max(lm * 10.0, 1e-6); continue
-            alpha = 1.0; lo = np.inf
-            if _LSTEP > 0 and hasattr(model, 'max_logit_change'):
-                _mx = model.max_logit_change(dlam)
-                if _mx > _LSTEP: alpha = _LSTEP / _mx; _ncap += 1
-            for _ in range(12):                    # short line search (good direction -> few backtracks)
+            lo = np.inf
+            for _ in range(12):                        # short line search (good direction -> few backtracks)
                 lam_trial = lam + alpha * dlam; lo = model.dual_loss(lam_trial)
                 if np.isfinite(lo) and lo <= loss + c1 * alpha * slope: break
                 alpha *= 0.5
-            if np.isfinite(lo) and lo < loss:      # accept; relax damping for the next step
+            if np.isfinite(lo) and lo < loss:          # accept; relax damping for the next step
                 lam = lam_trial; lm = lm * 0.3 if lm > 1e-12 else 0.0; accepted = True; accepted_steps += 1; break
-            lm = max(lm * 10.0, 1e-6)              # step didn't help -> damp more, retry
+            lm = max(lm * 10.0, 1e-6)                  # step didn't help -> damp more, retry
         if not accepted:
             if verbose: print(f"  LM: no further progress at step {step}")
             reason = 'stalled'; break
@@ -1468,13 +1485,13 @@ def optimize_newton(model, max_steps=50, tol=1e-8, verbose=True):
     _mp = float(np.max(np.abs(pulls))) if _fin else float('inf')
     _sc = np.maximum(np.maximum(np.abs(model.targets), model.sigma), 1e-300)
     _mr = float(np.max(np.abs(grad) / _sc)) if _fin else float('inf')
-    model.fit_status = {'reason': reason, 'accepted_steps': int(accepted_steps), 'logit_capped_steps': int(_ncap), 'logit_step': _LSTEP,
+    model.fit_status = {'reason': reason, 'accepted_steps': int(accepted_steps), 'logit_capped_steps': int(_ncap), 'logit_damped_solves': int(_ndamp), 'logit_step': _LSTEP,
                         'grad_norm': float(np.max(np.abs(grad))) if _fin else float('inf'),
                         'max_pull': _mp, 'max_rel': _mr, 'tol': _tol,
                         'rms_pull': float(np.sqrt(np.mean(pulls**2))) if _fin else float('inf'),
                         # a LM stall with every moment inside its own uncertainty is the numerical floor of the
                         # loss (double precision on L~30), not a failure: converged.
-                        'converged': bool(_fin and (reason == 'converged' or _mr < _tol or (reason == 'stalled' and _mp < 1.0)))}
+                        'converged': bool(_fin and (reason == 'converged' or _mr < _tol or (reason in ('stalled', 'maxsteps') and _mp < 1.0)))}
     print(f"  fit_status: {model.fit_status}")
 
     return loss

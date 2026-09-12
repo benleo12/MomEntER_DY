@@ -136,7 +136,7 @@ moments in `moments_<ENERGY>/` (shipped here for 13TeV, 13p6TeV and 13TeV_powheg
 | `examples/powheg_prior.md` | end-to-end recipe for reproducing the POWHEG+Pythia8 prior and its 7-point variations |
 
 Three priors are shipped: `13TeV` and `13p6TeV` (Sherpa NLO multi-jet merged, the
-published deliverables; 17 and 16 moments) and `13TeV_powheg` (19 moments, ungated):
+published deliverables; 15 and 14 moments) and `13TeV_powheg` (19 moments, ungated):
 a replica of the ATLAS MC15 sample DSID 361106 — POWHEG-BOX-V1 Z showered with
 Pythia 8.186 (AZNLO tune, CTEQ6L1) and Photos++ QED FSR — the paper's
 prior-independence demonstration on an independent generator. See
@@ -189,18 +189,22 @@ the sample must resolve its target to the calculation's own precision, and what 
 adds beyond the already-admitted moments must be known better than 0.1 of the prior's
 spread along that new direction, with the same bound applied to its shift across the
 28 scale schemes. `select_stable.py` then prunes to a stable set; a fit that exhausts
-its Newton budget (`MAX_STEPS=2000`, chosen so it never binds on a healthy set) counts
-as unstable. Every export must pass the health gate (`fit_health_v2.py`): the weight
+its Newton budget (`MAX_STEPS=2000`) counts as unstable unless every moment already sits
+within one standard deviation of its target. The Newton step is damped rather than
+throttled: when a step would move one event's log-weight by more than the cap, the
+Marquardt damping is raised and the step re-solved, so the step shortens along the
+direction that makes it long and not along every direction at once (v6). Every export must pass the health gate (`fit_health_v2.py`): the weight
 may not diverge as q_T → 0 (`check_smallqt.py`), the effective sample must stay above
 an absolute floor, and no scale scheme may shift the normalization by more than
 `|dC| < 0.5`. A failing member is dropped (`health_shrink.py`) and the fit is redone;
 a fit that cannot pass is not shipped. A validation fit that does not converge is
 treated like a non-converged export (v5.2): the moment with the largest stationarity
 residual is dropped, the set is re-pruned and validated again, at most three times.
-Repeating the selection with other random fit samples (seeds 7 and 2024 against the
-production seed 42) leaves the POWHEG set unchanged, changes the 13 TeV set (seed 2024 keeps
-16 of the 17 production moments and adds 4, K=20; seed 7 keeps 10 and adds 2, K=12),
-and moves the agreement with the calculation by up to about one percentage point. The out-of-sample selection additionally
+On the 2026-09-04 production samples, repeating the selection with other random fit
+samples (seeds 7 and 2024 against the production seed 42) left the POWHEG set unchanged,
+changed the 13 TeV set (seed 2024 kept 16 of the 17 production moments and added 4, K=20;
+seed 7 kept 10 and added 2, K=12), and moved the agreement with the calculation by up to
+about one percentage point. That study has not been repeated on the current samples. The out-of-sample selection additionally
 refuses any moment set that agrees with the calculation *worse than the unreweighted
 prior* on any validation distribution.
 
@@ -209,9 +213,11 @@ moment is normalised by the total rate, so `K` never enters the fit and changes 
 distribution. It is applied where the calculation is in control: `reweight()` multiplies the
 reweighted branch and leaves the generator's tail above the hand-off alone (`rate_tail=True`
 scales every event). `rate.sigma_calc_pb` and `rate.per_scheme[s].sigma_calc_pb` ship for every
-setup; `K` is filled in only where the prior's cross section is known in the same units (POWHEG),
-and for the Sherpa setups you supply it with `add_rate_block.py <tag> --sigma-prior <pb>`.
-Compare cross sections in the same phase space first: `rate.sigma_calc_definition` states it.
+setup; `K` is filled in wherever the prior's cross section is known: for POWHEG from the stored
+per-event weights in pb, for the Sherpa setups from the trials column when the sample dumps
+it (`sigma = sum(weights)/sum(trials)`, `rate.sigma_prior_source` says so); otherwise supply
+it with `add_rate_block.py <tag> --sigma-prior <pb>`. Compare cross sections in the same
+phase space first: `rate.phase_space` states it.
 
 For a multi-jet merged prior the weight belongs to the 0-jet and 1-jet contributions
 only: it is a function of q_T and the acoplanarity, so at higher multiplicity it would

@@ -1,8 +1,8 @@
 f0d0473c0f172724e54a4f9c7027995f  run_pipeline.sh
-eeaba0af51b9a0996c6ae08425f085d2  optimizer_DY_unc.py
+45170741899d4d71b065d6589fce338c  optimizer_DY_unc.py
 26c3a6dab6b6a2e5b5e03be2d7315575  build_tau_sets.py
 b01333ba81ec690b3ba2f76f2aadd399  admit_prune.py
-a93eed87c3ac208161b1483a2ebbba8e  select_stable.py
+9c2be49042b5b41c851f64db2e065632  select_stable.py
 ebf3886e645f37049800b6c6f3250082  grow_select.py
 b4a48f169637e52bb5734fec9e02ca48  fit_health_v2.py
 e00c88a94de73e894a441c1c65a84113  health_shrink.py
@@ -11,5 +11,5 @@ e00c88a94de73e894a441c1c65a84113  health_shrink.py
 cc083f895fe8ac63620f4553c65b87fc  validate_shipped_weights.py
 a1b27cf1aa6eaa59b52a5de31a476cec  apply_lambdas.py
 7106137b0e588969ed2e7669e64631ee  verify.py
-7e802e2b328782372a8164d7f48e4a6a  add_rate_block.py
-# v5.2 (2026-09-05): validation-stage non-convergence remedy (run_pipeline.sh PROG loop, final_plots_pro.py fit_lam strict branch names the offenders). Production paths and all delivered products unchanged; production hashes of v5 are recorded in PROVENANCE.diff.
+45cff079be4f988462f0ecc8724897ef  add_rate_block.py
+# v6 (2026-09-12): the products in products/ were produced by exactly this code (the run tree matched these hashes file for file). Changes since v5.2: select_stable.py one-sided overflow guard; optimizer_DY_unc.py step-limited fits with every pull below one sigma accepted, and the log-weight cap handled by Marquardt damping (floored scale, direction search separate from the acceptance attempts) instead of scaling the whole step; add_rate_block.py no longer writes prior_mean_stored_weight. Details in PROVENANCE.diff.

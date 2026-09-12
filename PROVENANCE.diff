@@ -1,3 +1,22 @@
+# v6 (2026-09-12, this repository): every product in products/ was produced by exactly the code fingerprinted in
+# CODE_MD5.txt -- the production run tree and this repository were byte-identical for every pipeline file, so
+# there is no production/release diff for v6; the diff below is the historical v5 -> release one.
+# Changes since v5.2:
+#   (d) select_stable.py: the numerical-overflow guard tests the positive side of the log-weight only. A large
+#       negative log-weight underflows to zero harmlessly; the two-sided test had rejected sound moment sets on
+#       every Sherpa production run (13 TeV max logit 0.9 and 0.3, 13.6 TeV 31 and 6, against a cap of 500).
+#   (e) optimizer_DY_unc.py, two changes to the Newton step control. A fit stopped by the step limit with every
+#       moment within one sigma of its target counts as converged. The per-event log-weight cap no longer scales
+#       the whole step: the Marquardt damping is raised and the step re-solved, with the damping scale floored at
+#       1e-6 of the largest Hessian diagonal (a zero or negative diagonal, from signed weights, is then regularised
+#       too) and the direction search kept separate from the twelve acceptance attempts. Measured: on 13.6 TeV with
+#       20 moments the old control capped 400 of 400 steps at alpha ~ 1e-3 and never reached tolerance; the new one
+#       converges. Checked against the earlier products: 13 TeV reproduces its fitted lambdas to 2.7e-7, POWHEG
+#       exactly, every validation number to the printed digit. On the current priors the admitted sets contain a
+#       direction along which the signed weights cancel; the new control descends it, the prune removes its
+#       drivers, and the fit converges on the remainder (15 and 14 moments).
+#   (f) add_rate_block.py: 'prior_mean_stored_weight' is no longer written -- it is not a cross section and was
+#       read as one. sigma_prior for a Sherpa sample is sum(weights)/sum(trials) from the trials column.
 # v5.2 (2026-09-05, this repository): on top of the v5 production code below, the non-convergence remedy of the
 # export stage (drop the moment with the largest stationarity residual, re-prune, retry, at most 3 rounds) is also
 # applied at the validation stage: run_pipeline.sh (PROG loop) and final_plots_pro.py (fit_lam, strict branch writes

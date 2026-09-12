@@ -84,7 +84,10 @@ def frames(n, figsize_one=(4.67, 4.68), gap=0.28, row=None):
     return fig, pairs
 
 def decorate(ax, ar, title, ylab, rlab, xlab, notes=(), corner="lower left"):
-    ax.set_ylabel(ylab, loc="top"); ar.set_ylabel(rlab); ar.set_xlabel(xlab, loc="right")
+    # loc="top" is the Rivet convention, but the side-by-side panels are short enough that a long
+    # y label anchored at the top runs off the figure and is cut (the fiducial p_T label lost its
+    # superscript).  Centre it in that layout.
+    ax.set_ylabel(ylab, loc="center" if ROW else "top"); ar.set_ylabel(rlab); ar.set_xlabel(xlab, loc="right")
     ax.set_title(title, loc="left")
     if ROW: notes = notes[:1]      # a short panel holds one in-panel line; the rest goes in the caption
     for k, txt in enumerate(notes):
@@ -104,7 +107,30 @@ def points(ax, e, y, err, **kw):
     c = 0.5 * (e[:-1] + e[1:]); ax.errorbar(c, y, yerr=err, xerr=[c - e[:-1], e[1:] - c], fmt="o", ms=2, lw=1, color="k", capsize=0, zorder=25, **kw)
 def legend_first(ax, first, **kw):
     h, l = ax.get_legend_handles_labels(); o = [l.index(first)] + [i for i in range(len(l)) if l[i] != first]
-    ax.legend([h[i] for i in o], [l[i] for i in o], **kw)
+    return ax.legend([h[i] for i in o], [l[i] for i in o], **kw)
+
+def clear_legend(ax, leg, e, curves, margin=0.045):
+    """Grow the top of the log y axis until nothing drawn runs underneath the legend.
+
+    A fixed headroom factor cannot work here: it knows neither how tall the legend is in the
+    frame nor where the spectrum peaks, so three legend lines over a flat low-qT spectrum end up
+    written across the curve.  Measure the legend box, take the largest bin content under it, and
+    put that content just below the box.
+    """
+    fig = ax.figure; fig.canvas.draw()
+    bb = leg.get_window_extent().transformed(ax.transAxes.inverted())
+    lo, hi = ax.get_ylim()
+    if not (lo > 0 and hi > 0): return
+    xa = ax.transAxes.inverted().transform(ax.transData.transform(np.c_[e, np.full(len(e), lo)]))[:, 0]
+    sel = (xa[1:] > bb.x0) & (xa[:-1] < bb.x1)          # bins overlapping the legend horizontally
+    if not sel.any(): return
+    v = np.concatenate([np.asarray(y, float)[sel] for y in curves if y is not None])
+    v = v[np.isfinite(v) & (v > 0)]
+    if v.size == 0: return
+    L, H = np.log10(lo), np.log10(hi); yc = np.log10(v.max())
+    ftarget = bb.y0 - margin                             # top of the data must sit this far below the box
+    if ftarget <= 0.05 or (yc - L) <= 0: return
+    if (yc - L) / (H - L) > ftarget: ax.set_ylim(lo, 10 ** (L + (yc - L) / ftarget))
 def finish(fig, out):
     for ext in (".pdf", ".png"): fig.savefig(out + ext, dpi=220)
     plt.close(fig); print(f"  wrote {out}.pdf/.png")
@@ -130,9 +156,12 @@ def draw(ax, ar, e, ref, ref_err, pri, rew, rlo, rhi, prior_label, ref_label, re
     ymin = np.nanmin(np.concatenate([ref[good], rew[has], pri[has]])); L = np.log10(ymin * 0.3)
     if np.ceil(L) - L < 0.35: L = np.ceil(L) - 0.6                         # keep the lowest decade label clear of the ratio panel's 1.4
     ax.set_ylim(10**L, np.nanmax(ref[good]) * 4)
-    if ROW: _lo, _hi = ax.get_ylim(); ax.set_ylim(_lo, _hi * 120)   # headroom so the legend clears the spectrum
-    if corner == "lower left": legend_first(ax, ref_label, alignment="left", loc="lower left", bbox_to_anchor=(0.01, 0.01), markerfirst=True)
-    else:                      legend_first(ax, ref_label, alignment="right", loc="upper right", bbox_to_anchor=(1.0, 0.97), markerfirst=False)
+    if ROW: _lo, _hi = ax.get_ylim(); ax.set_ylim(_lo, _hi * 8)     # first guess; clear_legend sets the real top
+    if corner == "lower left": leg = legend_first(ax, ref_label, alignment="left", loc="lower left", bbox_to_anchor=(0.01, 0.01), markerfirst=True)
+    else:                      leg = legend_first(ax, ref_label, alignment="right", loc="upper right", bbox_to_anchor=(1.0, 0.97), markerfirst=False)
+    if ROW and corner == "upper right":
+        clear_legend(ax, leg, e, [nan(ref, good), nan(rew, has), nan(pri, has), nan(rhi, has),
+                                  None if ref_band is None else nan(ref_band[1], good)])
     if ref_band is not None: ar.legend(loc="lower right", ncol=2, fontsize=8, handlelength=1.6, markerfirst=False)
     return dict(prior_med=100*np.median(np.abs(pri[has]/ref[has]-1)), prior_max=100*np.max(np.abs(pri[has]/ref[has]-1)),
                 rew_med=100*np.median(np.abs(rew[has]/ref[has]-1)), rew_max=100*np.max(np.abs(rew[has]/ref[has]-1)), nbins=int(has.sum()))

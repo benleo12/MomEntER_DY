@@ -178,7 +178,11 @@ def fit_apply(nm,lam0=None,sel=None,wfit=None,teps=None):
         order=np.argsort(-np.abs(contrib)); wl=[int(k) for k in order if abs(contrib[k])>5.0] or [int(order[0])]
         return 0.0, wl[:DROP_PER_ROUND], (float(logit[ev]),float(rt[ev]),float(d[ev])), lam, None, {}
     C=gmax+np.log(S1u/S0)                      # normalization shift
-    if float(np.max(np.abs(logit-C)))>LOGIT_CAP:   # overflow guard fails -> unstable
+    # Only the POSITIVE side can overflow (exp -> inf, and 0*inf = nan in the gated blend).  A large
+    # negative logit underflows to zero, which is harmless, and rejecting a set for it discards good
+    # moment sets: measured on 13p6TeV_q30 iteration 0, min(logit-C) = -2258 over 484 events, every one
+    # of them above the hand-off, while the gated N_eff was 10.7%, five times the floor.
+    if float(np.max(logit-C))>LOGIT_CAP:   # overflow guard fails -> unstable
         neff=0.0
     else:
         wg=BETA*w*np.exp(logit-C)+(1.0-BETA)*w

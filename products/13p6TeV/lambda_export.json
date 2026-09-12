@@ -1,104 +1,94 @@
 {
- "description": "MaxEnt reweighting of sherpa_prior_13p6TeV_q30 to Wan-Li N4LLp+N3LO. Per event, fully local: w_rew = w0 * exp( sum_k lambda_physical[k]*phi_k - log_norm_shift ). The shift already fixes the normalization (sum w_rew = sum w0); no global max or renormalization needed.",
- "n_moments": 16,
+ "description": "MaxEnt reweighting of sherpa_prior_13p6TeV_f3 to Wan-Li N4LLp+N3LO. Per event, fully local: w_rew = w0 * exp( sum_k lambda_physical[k]*phi_k - log_norm_shift ). The shift already fixes the normalization (sum w_rew = sum w0); no global max or renormalization needed.",
+ "n_moments": 14,
  "moments": [
-  "const^0\u00d7dphi^1",
-  "const^0\u00d7lndphi^1",
-  "lnrt^1\u00d7const^0",
-  "const^0\u00d7dphi^2",
-  "const^0\u00d7lndphi^2",
-  "lnrt^1\u00d7dphi^1",
-  "lnrt^2\u00d7const^0",
-  "lnrt^1\u00d7lndphi^1",
-  "lnrt^1\u00d7dphi^2",
-  "lnrt^2\u00d7dphi^1",
-  "const^0\u00d7dphi^1*lndphi^3",
-  "lnrt^2\u00d7dphi^2",
-  "lnrt^3\u00d7dphi^2",
-  "const^0\u00d7dphi^2*lndphi^4",
-  "lnrt^2\u00d7dphi^4",
-  "lnrt^4\u00d7dphi^2"
+  "const^0×dphi^1",
+  "const^0×lndphi^1",
+  "lnrt^1×const^0",
+  "const^0×dphi^2",
+  "const^0×lndphi^2",
+  "lnrt^1×dphi^1",
+  "lnrt^2×const^0",
+  "lnrt^1×dphi^2",
+  "lnrt^2×dphi^1",
+  "const^0×dphi^1*lndphi^3",
+  "lnrt^2×dphi^2",
+  "lnrt^4×dphi^1",
+  "rt^1×lndphi^4",
+  "const^0×dphi^2*lndphi^4"
  ],
  "sig_mode": "stat",
  "penalty_sigma": "theory-stat (+) prior-MC",
  "lambda_physical": [
-  0.08488735104956542,
-  -0.07824333158811443,
-  -0.13215147363246116,
-  -0.009138567983053379,
-  -0.018704805129455566,
-  0.27556413492873716,
-  -0.04917214344556654,
-  0.026845172582823252,
-  -0.07543459580712476,
-  0.12903462542575242,
-  0.08877233076576047,
-  -0.02314043284854807,
-  -0.004714102739536757,
-  -0.031258939985982497,
-  -0.0004028697443185982,
-  -0.0031818542086183435
+  -0.00926887632560092,
+  -0.10537205316868668,
+  -0.14223372049688854,
+  0.023943875017043818,
+  -0.01465095826634066,
+  0.12683877934693857,
+  -0.048961068310227715,
+  -0.029682891259624315,
+  0.10656061783021029,
+  0.10682983882934675,
+  -0.01645465352483843,
+  -0.006419913626750475,
+  9.822067365140498e-05,
+  -0.04083874759302736
  ],
- "log_norm_shift": 0.13044717304606318,
+ "log_norm_shift": 0.06694827186765284,
  "feature_convention": {
-  "phi_k": "product over the two parts of moment name \"A\u00d7B\" (A=rt-side, B=dphi-side)",
+  "phi_k": "product over the two parts of moment name \"A×B\" (A=rt-side, B=dphi-side)",
   "monomials": "rt^k=rt**k, dphi^k=dphi**k, lnrt^k=log(rt)**k, lndphi^k=log(dphi)**k, const^0=1; parts within a side joined by *",
   "vars": "rt=qT/m_ll, dphi=pi-Delta_phi_ll; clip log args at 1e-12"
  },
  "standardization_note": "lambda_physical already folds in the unit-std feature scaling; apply directly to raw monomials. (lambda_standardized + sF,sG given only for cross-check.)",
  "lambda_standardized": [
-  0.08493578985721942,
-  -0.10913347804160115,
-  -0.18414017311733044,
-  -0.027685029582521316,
-  -0.08593317864191204,
-  0.3841908152115511,
-  -0.17424674171493365,
-  0.05217391171029745,
-  -0.31842997984896276,
-  0.4575088925763428,
-  0.1331320797911381,
-  -0.24841845087965195,
-  -0.2156781892911532,
-  -0.12623412130977602,
-  -0.03683625536219975,
-  -0.7149994600204878
+  -0.00929745258506445,
+  -0.14919540359205957,
+  -0.20161639276870066,
+  0.07269505680156102,
+  -0.07023233501497941,
+  0.1803483646712627,
+  -0.18262474388307817,
+  -0.12774382453170943,
+  0.3986964320549052,
+  0.1608901389341138,
+  -0.1863407846553316,
+  -0.4937546654060751,
+  0.07997990257272383,
+  -0.1656262068753334
  ],
  "sF": [
   1.0,
   1.0,
-  1.393402343960688,
+  1.4175006606335039,
   1.0,
   1.0,
-  1.393402343960688,
-  3.5436067965559492,
-  1.393402343960688,
-  1.393402343960688,
-  3.5436067965559492,
+  1.4175006606335039,
+  3.7299991643550148,
+  1.4175006606335039,
+  3.7299991643550148,
   1.0,
-  3.5436067965559492,
-  15.102204281431876,
-  1.0,
-  3.5436067965559492,
-  74.17517716923997
+  3.7299991643550148,
+  76.67347419901921,
+  3.6780114000350803,
+  1.0
  ],
  "sG": [
-  1.0005706245636727,
-  1.3947958992351892,
+  1.0030830338500256,
+  1.4158915870531394,
   1.0,
-  3.0294713169350627,
-  4.594176632537485,
-  1.0005706245636727,
+  3.036060652246763,
+  4.793702482678712,
+  1.0030830338500256,
   1.0,
-  1.3947958992351892,
-  3.0294713169350627,
-  1.0005706245636727,
-  1.4997024257752982,
-  3.0294713169350627,
-  3.0294713169350627,
-  4.038336596390773,
-  25.80270850109703,
-  3.0294713169350627
+  3.036060652246763,
+  1.0030830338500256,
+  1.5060412025063954,
+  3.036060652246763,
+  1.0030830338500256,
+  221.39351287531898,
+  4.055614254527525
  ],
  "gating": {
   "variable": "qT [GeV]",
@@ -117,178 +107,177 @@
   "gate_lo": 120.0,
   "gate_hi": 200.0,
   "n_events": 51200000,
-  "neff_gated": 5450742.994280154,
-  "prior_neff": 5316040.447026175,
+  "neff_gated": 5230999.973407162,
+  "prior_neff": 5420161.607253595,
   "stability_floor": 1000000.0,
   "floor_from_provenance": true,
   "provenance_NEV": 51200000,
   "closure_pct": {
-   "median": 0.0002350969915607698,
-   "mean": 0.00033855474669926906,
-   "max": 0.0010192919338079507
+   "median": 0.00023356264114656855,
+   "mean": 0.0003249404506286304,
+   "max": 0.001050642522562209
   },
-  "max_logit_minus_C_applied": 0.3098239687677789,
-  "min_logit_minus_C_applied": -7.6275094461955915,
+  "max_logit_minus_C_applied": 3.977302897468486,
+  "min_logit_minus_C_applied": -8.019243830034581,
   "note": "MEASURED on all n_events with the exported lambda. neff_gated = N_eff of the GATED deliverable weights, the same functional select_stable.py prunes on; stability_floor is the winner set provenance floor (rescaled to n_events). closure_pct = per-moment |<phi_k>_w/T_k - 1|. max/min(logit-C) are over events with beta(qT)>0."
  },
- "closure": "MEASURED on all 51,200,000 events with the lambdas in this file: the 16 moments of this set are reproduced to median 0.000% / max 0.001%; N_eff of the gated deliverable = 10.65% (prior 10.38%).",
+ "closure": "MEASURED on all 51,200,000 events with the lambdas in this file: the 14 moments of this set are reproduced to median 0.000% / max 0.001%; N_eff of the gated deliverable = 10.22% (prior 10.59%).",
  "rate": {
-  "description": "Overall rate normalization. The MaxEnt weight preserves the prior's normalization (sum w = sum w0) and transfers only the shape; K = sigma_calc / sigma_prior sets the absolute scale. Every fitted moment is normalized by the total rate, so K does not enter the fit and changes no normalized distribution. Apply it where the calculation is in control: apply_lambdas multiplies the reweighted branch by K and leaves the generator's tail above the hand-off untouched (rate_tail=True scales every event instead). The total rate of the sample is then K x (bulk) + (tail). Per scheme use per_scheme[s].K with schemes[s] of lambda_export_variations.json.",
+  "description": "Overall rate normalization. The MaxEnt weight preserves the prior's normalization (sum w = sum w0) and transfers only the shape; multiply every weight (central branch and tail branch alike) by K to normalize the sample to the calculation's total rate. Per scheme use per_scheme[s].K with schemes[s] of lambda_export_variations.json.",
   "phase_space": "inclusive, m_ll >= 40 GeV, all lepton rapidities (the calculation's normalization moment); the prior sample is generated with the same mass cut",
   "sigma_calc_pb": 2105.2779949743854,
   "sigma_calc_mc_unc_pb": 7.23830743070213,
-  "sigma_prior_pb": null,
-  "sigma_prior_source": "not set: this sample's cross section is sum(weights)/sum(trials), the Sherpa convention. The trials count is much larger than one because of the cut efficiency, and it was not dumped into these CSVs, so the rate cannot be recovered from the stored weights: their mean, 15011 pb, is the weight sum divided by the event count and is meaningless as a cross section. Take sigma from the Sherpa run log (or from a dump that carries the trials column: on an earlier prior of ours that has it, sum(w)/sum(trials) = 2148.78 pb) and pass it with add_rate_block.py <tag> --sigma-prior <pb>. Histograms and moments are unaffected: the trials sum is a global factor that cancels in every ratio, and the per-event weight in a histogram is w, never w/trials.",
+  "sigma_prior_pb": 2383.5047599717536,
+  "sigma_prior_source": "sum(weights)/sum(trials) = 2383.5048 pb, the Sherpa convention, computed from sherpa_prior_13p6TeV_f3/pT_trials.csv.gz. This is the cross section of the sample AS GENERATED, so K = sigma_calc/sigma_prior normalises the whole sample, multi-jet contributions included. To correct only the contributions the weight acts on, divide instead by the fixed-order rate of the same setup (see sigma_prior_fixed_order_pb when present).",
   "prior_n_events": 51200000,
-  "prior_mean_stored_weight": 15774.005280635329,
-  "K": null,
+  "prior_n_generated": 51200000,
+  "K": 0.8832698932807395,
   "per_scheme": {
    "0p5C0_np": {
     "sigma_calc_pb": 2105.981240486564,
     "sigma_calc_mc_unc_pb": 7.243998042405231,
-    "K": null
+    "K": 0.8835649401058974
    },
    "0p5kappa_np": {
     "sigma_calc_pb": 2104.760227355481,
     "sigma_calc_mc_unc_pb": 7.238631009561557,
-    "K": null
+    "K": 0.8830526637506796
    },
    "0p5MuBeam": {
     "sigma_calc_pb": 2108.4898684585733,
     "sigma_calc_mc_unc_pb": 7.300745104306966,
-    "K": null
+    "K": 0.8846174355798477
    },
    "0p5MuBF": {
     "sigma_calc_pb": 2111.5893126913556,
     "sigma_calc_mc_unc_pb": 7.277808025710845,
-    "K": null
+    "K": 0.8859178081592669
    },
    "0p5MuCt": {
     "sigma_calc_pb": 2105.205961820832,
     "sigma_calc_mc_unc_pb": 7.238843263845848,
-    "K": null
+    "K": 0.8832396717536994
    },
    "0p5MuFac": {
     "sigma_calc_pb": 2113.407910566729,
     "sigma_calc_mc_unc_pb": 7.250654888446913,
-    "K": null
+    "K": 0.8866808013388546
    },
    "0p5MuFtran": {
     "sigma_calc_pb": 2107.0912133819356,
     "sigma_calc_mc_unc_pb": 6.973582523110153,
-    "K": null
+    "K": 0.8840306295032976
    },
    "0p5MuHard": {
     "sigma_calc_pb": 2105.9183343837417,
     "sigma_calc_mc_unc_pb": 7.23873099493191,
-    "K": null
+    "K": 0.8835385478352048
    },
    "0p5MuSoft": {
     "sigma_calc_pb": 2104.218887827633,
     "sigma_calc_mc_unc_pb": 7.2364015318458765,
-    "K": null
+    "K": 0.8828255446205064
    },
    "0p5NuBeam": {
     "sigma_calc_pb": 2106.2757463633466,
     "sigma_calc_mc_unc_pb": 7.24512748532815,
-    "K": null
+    "K": 0.8836885001179136
    },
    "0p5NuSoft": {
     "sigma_calc_pb": 2104.613795724177,
     "sigma_calc_mc_unc_pb": 7.23516428862846,
-    "K": null
+    "K": 0.8829912283242591
    },
    "2C0_np": {
     "sigma_calc_pb": 2104.837949990874,
     "sigma_calc_mc_unc_pb": 7.233260576490308,
-    "K": null
+    "K": 0.8830852723012049
    },
    "2kappa_np": {
     "sigma_calc_pb": 2105.642964149743,
     "sigma_calc_mc_unc_pb": 7.24196820983985,
-    "K": null
+    "K": 0.8834230161867587
    },
    "2MuBeam": {
     "sigma_calc_pb": 2106.939924500808,
     "sigma_calc_mc_unc_pb": 7.232349881983274,
-    "K": null
+    "K": 0.8839671562165359
    },
    "2MuBF": {
     "sigma_calc_pb": 2102.916477787421,
     "sigma_calc_mc_unc_pb": 7.239584769293076,
-    "K": null
+    "K": 0.8822791181723264
    },
    "2MuCt": {
     "sigma_calc_pb": 2105.2496498595297,
     "sigma_calc_mc_unc_pb": 7.237916805576065,
-    "K": null
+    "K": 0.8832580010809286
    },
    "2MuFac": {
     "sigma_calc_pb": 2101.048997589,
     "sigma_calc_mc_unc_pb": 7.26777397052575,
-    "K": null
+    "K": 0.8814956164022509
    },
    "2MuFtran": {
     "sigma_calc_pb": 2105.777596809893,
     "sigma_calc_mc_unc_pb": 7.174621636456106,
-    "K": null
+    "K": 0.8834795013519705
    },
    "2MuHard": {
     "sigma_calc_pb": 2103.936699548948,
     "sigma_calc_mc_unc_pb": 7.242147080419453,
-    "K": null
+    "K": 0.8827071524597591
    },
    "2MuSoft": {
     "sigma_calc_pb": 2107.440671679627,
     "sigma_calc_mc_unc_pb": 7.239544448591264,
-    "K": null
+    "K": 0.8841772448168309
    },
    "2NuBeam": {
     "sigma_calc_pb": 2104.5812543447473,
     "sigma_calc_mc_unc_pb": 7.2348832929427065,
-    "K": null
+    "K": 0.8829775755806287
    },
    "2NuSoft": {
     "sigma_calc_pb": 2106.3643291099843,
     "sigma_calc_mc_unc_pb": 7.245454676144695,
-    "K": null
+    "K": 0.883725665030745
    },
    "0p5MuF": {
     "sigma_calc_pb": 2100.1156645577994,
     "sigma_calc_mc_unc_pb": 8.044691537269786,
-    "K": null
+    "K": 0.8811040363026954
    },
    "0p5MuRF": {
     "sigma_calc_pb": 2108.2990055026594,
     "sigma_calc_mc_unc_pb": 10.961226931679246,
-    "K": null
+    "K": 0.8845373589804135
    },
    "0p5MuR": {
     "sigma_calc_pb": 2104.8375182931595,
     "sigma_calc_mc_unc_pb": 9.681857424176734,
-    "K": null
+    "K": 0.883085091182324
    },
    "2MuF": {
     "sigma_calc_pb": 2109.2402252677375,
     "sigma_calc_mc_unc_pb": 7.881014336151838,
-    "K": null
+    "K": 0.8849322479610796
    },
    "2MuRF": {
     "sigma_calc_pb": 2103.3901735543686,
     "sigma_calc_mc_unc_pb": 8.830788934438608,
-    "K": null
+    "K": 0.8824778573462112
    },
    "2MuR": {
     "sigma_calc_pb": 2094.8324142855226,
     "sigma_calc_mc_unc_pb": 8.788122845401249,
-    "K": null
+    "K": 0.8788874473698757
    },
    "central": {
     "sigma_calc_pb": 2105.2779949743854,
     "sigma_calc_mc_unc_pb": 7.23830743070213,
-    "K": null
+    "K": 0.8832698932807395
    }
-  },
-  "sigma_calc_definition": "integral of the tabulated N4LL'+N3LO calculation over its full range (the g0 moment, dphi^0 x lndphi^0): m_ll >= 40 GeV, all lepton rapidities, one lepton flavour, QCD only. Cross-check: integrating the tabulated rT density reproduces it to 0.1%. Compare sigma_prior in the SAME phase space before forming K."
+  }
  }
 }

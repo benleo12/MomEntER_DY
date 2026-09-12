@@ -21,9 +21,9 @@
     "lnrt^4×dphi^2"
   ],
   "n_selected": 19,
-  "source": "stable @48M subset of moments_13TeV_pwg186p/stable_WINNER_H.json (auto prune)",
+  "source": "stable @48M subset of moments_13TeV_pwgf/stable_WINNER_H.json (auto prune)",
   "FRAC": 0.5,
-  "energy": "13TeV_pwg186p",
+  "energy": "13TeV_pwgf",
   "provenance": {
     "NEV": 48623807,
     "FIT_NEV": 5000000,
@@ -36,9 +36,9 @@
     "TARGET_SCHEME": "",
     "DROP_PER_ROUND": 5,
     "MAX_STEPS": 2000,
-    "prior": "sherpa_prior_13TeV_pwg186p",
-    "targets": "moments_13TeV_pwg186p/DYMoments_N4LLp+N3LO.csv",
-    "candidate": "moments_13TeV_pwg186p/stable_WINNER_H.json",
+    "prior": "sherpa_prior_13TeV_pwgf",
+    "targets": "moments_13TeV_pwgf/DYMoments_N4LLp+N3LO.csv",
+    "candidate": "moments_13TeV_pwgf/stable_WINNER_H.json",
     "K_in": 19,
     "prior_neff": 48384394.54570542,
     "fit_subsample": {
@@ -46,13 +46,13 @@
       "n_tail": 2091,
       "q": 1e-05
     },
-    "code_md5": "a93eed87c3ac",
+    "code_md5": "9c2be49042b5",
     "history": [
       {
         "iter": 0,
         "K": 19,
-        "neff": 48295563.41936515,
-        "max_logit": 2.4873888628160117,
+        "neff": 48295563.41906354,
+        "max_logit": 2.487393268096165,
         "rt": 16.982565112763236,
         "d": 2.7533437535897933,
         "dropped": []
@@ -61,10 +61,10 @@
         "iter": 0,
         "K": 19,
         "hess": {
-          "hess_eig_min": 0.00021457670283469695,
-          "hess_eig_max": 7.616490382056958,
-          "hess_diag_min": 0.009104751436716971,
-          "C": -0.22724541927456698
+          "hess_eig_min": 0.0002145767045959701,
+          "hess_eig_max": 7.616490354343565,
+          "hess_diag_min": 0.009104751572084261,
+          "C": -0.22724538529156568
         }
       }
     ]
