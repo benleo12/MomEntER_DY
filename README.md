@@ -203,11 +203,14 @@ an absolute floor, and no scale scheme may shift the normalization by more than
 a fit that cannot pass is not shipped. A validation fit that does not converge is
 treated like a non-converged export (v5.2): the moment with the largest stationarity
 residual is dropped, the set is re-pruned and validated again, at most three times.
-On the 2026-09-04 production samples, repeating the selection with other random fit
-samples (seeds 7 and 2024 against the production seed 42) left the POWHEG set unchanged,
-changed the 13 TeV set (seed 2024 kept 16 of the 17 production moments and added 4, K=20;
-seed 7 kept 10 and added 2, K=12), and moved the agreement with the calculation by up to
-about one percentage point. That study has not been repeated on the current samples. The out-of-sample selection additionally
+Repeating the selection on the current samples with other random fit samples (seeds 7 and
+2024 against the production seed 42) keeps every admitted moment where the production sample
+had pruned five: at 13 TeV 21 and 20 moments against 15 (12 and 13 of the 15 in common), at
+13.6 TeV 19 and 18 against 14 (14 and 13 in common). The shipped-weight agreement with the
+calculation (trusted medians r_T / acoplanarity / q_T, in %) moves by at most 0.4 points:
+13 TeV 3.37/1.29/2.48 (production), 3.21/1.22/2.34 (seed 7), 3.49/1.34/2.22 (seed 2024);
+13.6 TeV 3.10/2.41/2.22, 2.89/2.21/1.86, 3.19/2.48/2.56. The POWHEG set was unchanged under
+the same test on 2026-09-04 and was not repeated. The out-of-sample selection additionally
 refuses any moment set that agrees with the calculation *worse than the unreweighted
 prior* on any validation distribution.
 
