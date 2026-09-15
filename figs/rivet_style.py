@@ -172,7 +172,13 @@ FID = {"qt": dict(xl=r"$p_\mathrm{T}^{\ell\ell}$ [GeV]", yl=r"$1/\sigma\,\mathrm
 FID_TITLE = {"qt": "Transverse momentum of the lepton pair", "ps": r"$\phi^*_\eta$ of the lepton pair"}
 FID_NOTES = (r"$pp\to l^+l^-$, dressed", r"$p_{T,l}\geq 27$ GeV, $|\eta_l|\leq 2.5$", r"$66$ GeV$\leq m_{ll}\leq 116$ GeV")
 DATA_LABEL = "ATLAS Data, EPJC80(2020)616"
-def rew_label_for(prior_label): return r"N$^4$LL$^\prime$+N$^3$LO+POWHEG" if "POWHEG" in prior_label else r"N$^4$LL$^\prime$+N$^3$LO+MEPS@NLO"
+def rew_label_for(prior_label, with_ref=False):
+    """Label of the reweighted sample.  The merged Sherpa sample keeps its own prediction above the
+    hand-off, so it is named with the calculation; POWHEG is reweighted everywhere and carries the
+    calculation's accuracy alone, so POWHEG appears only in the prior's label (Hoeche).  Where the
+    calculation itself is drawn under the same name, the sample is marked as the reweighted one."""
+    if "POWHEG" in prior_label: return r"N$^4$LL$^\prime$+N$^3$LO" + (" (reweighted)" if with_ref else "")
+    return r"N$^4$LL$^\prime$+N$^3$LO+MEPS@NLO"
 
 def fid_one(ax, ar, z, key, prior_label):
     e = z[f"{key}_edges"]; corner = "upper right" if ROW else "lower left"   # with the row-mode headroom the upper right is free
@@ -217,7 +223,7 @@ def thy_one(ax, ar, z, key, prior_label, title):
     corner = "upper right" if (ROW or key == "d") else "lower left"
     decorate(ax, ar, THY_TITLE[key], THY[key]["yl"], "Ratio to calculation", THY[key]["xl"], notes=(title, r"$m_{ll}\geq 40$ GeV"), corner=corner)
     return draw(ax, ar, e, T["cen"], 0.5 * (T["sthi"] - T["stlo"]), pri, rew, rlo, rhi, prior_label, THY_LABEL,
-                ref_band=(T["slo"], T["shi"]), ref_hatch=(T["stlo"], T["sthi"]), xscale=THY[key]["xs"], xlo=THY[key]["xlo"], rew_label=rew_label_for(prior_label), corner=corner)
+                ref_band=(T["slo"], T["shi"]), ref_hatch=(T["stlo"], T["sthi"]), xscale=THY[key]["xs"], xlo=THY[key]["xlo"], rew_label=rew_label_for(prior_label, with_ref=True), corner=corner)
 
 def thy(npz, pre, prior_label, title):
     z = np.load(npz, allow_pickle=True); res = {}
