@@ -177,7 +177,7 @@ def rew_label_for(prior_label):
     hand-off, so it is named with the calculation; POWHEG is reweighted everywhere and carries the
     calculation's accuracy alone, so POWHEG appears only in the prior's label (Hoeche), and the
     reweighted sample is marked as such in every figure (Assi)."""
-    if "POWHEG" in prior_label: return r"N$^4$LL$^\prime$+N$^3$LO (MaxEnt reweighted)"
+    if "POWHEG" in prior_label: return r"N$^4$LL$^\prime$+N$^3$LO (reweighted)"
     return r"N$^4$LL$^\prime$+N$^3$LO+MEPS@NLO"
 
 def fid_one(ax, ar, z, key, prior_label):
