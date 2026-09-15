@@ -10,8 +10,9 @@ time. The per-event reweighting is
 where log_norm_shift is a fixed constant (stored in the file) that already sets the
 normalization (sum w_rew = sum w0): the fit transfers the SHAPE of the calculation.
 The calculation's total rate enters as the overall factor K = sigma_calc/sigma_prior
-(the "rate" block of the file; per scheme K_s), applied to every event, tail included,
-unless rate=False. Self-contained: reads only a lambda_export.json.
+(the "rate" block of the file; per scheme K_s), applied where the calculation is in
+control, i.e. to the reweighted branch below the hand-off (rate_tail=True scales the
+generator's tail as well, rate=False drops K). Self-contained: reads only a lambda_export.json.
 
 For each event you supply four numbers:
     w0       generator weight
@@ -25,10 +26,14 @@ Usage:
     from apply_lambdas import reweight
     w = reweight(w0, qT, m_ll, dphi_ll, energy="13TeV")   # numpy arrays or scalars
 
+    from apply_lambdas import reweight_scheme, schemes, theory_band
+    h = {s: histogram(reweight_scheme(w0, qT, m_ll, dphi_ll, scheme=s)) for s in schemes()}
+    lo, hi = theory_band(h)          # the theory band on your histograms (per-scale quadrature)
+
 The delivered products live in products/<energy>/:
-    products/13TeV/lambda_export.json              central weights (17 moments)
+    products/13TeV/lambda_export.json              central weights (15 moments)
     products/13TeV/lambda_export_variations.json   central + 28 scale/NP schemes
-    products/13p6TeV/...                           same at 13.6 TeV (16 moments)
+    products/13p6TeV/...                           same at 13.6 TeV (14 moments)
     products/13TeV_powheg/...                      POWHEG (ATLAS 361106 config), 19 moments, ungated
 """
 import os, json, numpy as np
@@ -76,8 +81,9 @@ def _apply(w0, qT, m_ll, dphi_ll, names, lam, C, gat, gate=True, w0_tail=None, K
     beta = 1.0 - (6*t**5 - 15*t**4 + 10*t**3)            # 1 below lo, 0 above hi
     # Above the hand-off the sample is the generator's, so a generator variation weight
     # (e.g. one member of the 7-point muR/muF set) may be supplied for the tail branch.
-    # Band recipe: envelope over the 29 theory schemes (w0_tail=None) UNION the generator
-    # variations (scheme='central', w0_tail=w0_V). The theory schemes revert to the
+    # Band recipe: the 28 theory schemes (w0_tail=None) combined per scale in quadrature by
+    # theory_band() -- NOT their envelope -- plus the generator variations (scheme='central',
+    # w0_tail=w0_V) combined as the generator prescribes. The theory schemes revert to the
     # central prior in the tail (resummation is off there), the generator variations act
     # only in the tail, so the two tile the phase space without double counting.
     wt = w0 if w0_tail is None else np.asarray(w0_tail)
@@ -123,9 +129,10 @@ def reweight(w0, qT, m_ll, dphi_ll, energy="13TeV", jpath=None, gate=True, w0_ta
 
 def reweight_scheme(w0, qT, m_ll, dphi_ll, scheme='central',
                     energy="13TeV", jpath=None, gate=True, w0_tail=None, rate=True, njet=None, njet_max=1, rate_tail=False):
-    """One scale/NP scheme (scheme='central','2MuR',...). Repeat over all schemes for the band.
-    Full band with generator tail variations: envelope over the 29 theory schemes
-    (w0_tail=None) union reweight(..., w0_tail=w0_V) for each generator variation V."""
+    """One scale/NP scheme (scheme='central','2MuR',...). Repeat over all schemes, histogram
+    each, and pass the histograms to theory_band() for the band (per-scale quadrature, Wan-Li
+    Ju's rule; NOT the envelope over the 29 schemes). With generator tail variations add
+    reweight(..., w0_tail=w0_V) for each generator variation V above the hand-off."""
     d = json.load(open(jpath or _default(energy, variations=True)))
     s = d['schemes'][scheme]
     K = (s.get('K') or d.get('rate', {}).get('K') or 1.0) if rate else 1.0
@@ -138,6 +145,44 @@ def schemes(energy="13TeV", jpath=None):
     """List the available scale/NP scheme names (central + 28 variations)."""
     d = json.load(open(jpath or _default(energy, variations=True)))
     return list(d['schemes'].keys())
+
+
+# ---------------------------------------------------------------------------------------------------
+# The theory band from the 29 scheme histograms: Wan-Li Ju's prescription (his notebook, cell rTSV).
+#   up   = sqrt( sum over scales s of  max(h[2s] - h[central], h[0p5s] - h[central], 0)^2 )
+#   down = sqrt( sum over scales s of  min(h[2s] - h[central], h[0p5s] - h[central], 0)^2 )
+# Each of the 14 scales contributes the larger of its two deviations (x2, x1/2) in each direction,
+# clipped at zero; the scales add in quadrature, up and down separately.  The three fixed-order
+# members (MuR, MuF, MuRF) are three terms, MuFtran (varied on the resummed and fixed-order sides
+# together) one.  This is NOT the envelope over the 28 variations, which keeps only the largest
+# scale per bin and is smaller by up to the square root of the number of scales that matter there.
+# Identical to the rule of the paper figures (figs/rivet_style.py: scheme_band).  For absolute
+# spectra use the per-scheme K (rate.per_scheme) so the rate variation enters as well.
+SCALES = ("C0_np", "kappa_np", "MuBeam", "MuSoft", "MuFac", "MuHard", "MuCt", "MuBF",
+          "NuBeam", "NuSoft", "MuF", "MuR", "MuRF", "MuFtran")
+
+
+def scale_of(scheme):
+    """'2MuR' -> 'MuR', '0p5MuR' -> 'MuR', 'central' -> None"""
+    if scheme.startswith("0p5"): return scheme[3:]
+    if scheme.startswith("2"):   return scheme[1:]
+    return None
+
+
+def theory_band(h, central="central"):
+    """h: {scheme: array} histograms (or any per-bin quantities) on one binning, keys as in
+    schemes().  Returns (lo, hi), the band edges around h[central]."""
+    c = np.asarray(h[central], float)
+    up2 = np.zeros_like(c); dn2 = np.zeros_like(c); seen = set()
+    for s in SCALES:
+        devs = [np.asarray(h[k], float) - c for k in h if scale_of(k) == s]
+        if not devs: continue
+        seen.add(s)
+        up2 += np.maximum.reduce([np.maximum(d, 0) for d in devs]) ** 2
+        dn2 += np.maximum.reduce([np.maximum(-d, 0) for d in devs]) ** 2
+    missing = [k for k in h if k != central and scale_of(k) not in seen]
+    if missing: raise ValueError(f"schemes not assigned to a scale: {missing}")
+    return c - np.sqrt(dn2), c + np.sqrt(up2)
 
 
 if __name__ == '__main__':

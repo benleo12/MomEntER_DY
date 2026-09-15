@@ -41,8 +41,11 @@ w = reweight(w0, qT, m_ll, dphi_ll, energy="13TeV")   # numpy arrays or scalars
 
 You supply four per-event numbers: the generator weight `w0`, the dilepton `qT` and
 `m_ll` [GeV], and the acoplanarity `dphi_ll = π − Δφ_ll`.
-The 28 scale/NP variations are `reweight_scheme(..., scheme=s)` for `s in schemes()`;
-the theory band combines the per-scale deviations in quadrature (pair the 0p5/2 variations of each scale). See `examples/apply_quickstart.py`.
+The 28 scale/NP variations are `reweight_scheme(..., scheme=s)` for `s in schemes()`.
+Histogram each scheme and pass the histograms to `theory_band()`, which applies the
+calculation's own rule (Wan-Li Ju): per scale the larger of the ×2 and ×½ deviations in
+each direction, the 14 scales added in quadrature, up and down separately. It is not the
+envelope over the 28 variations, which keeps only the largest scale per bin. See `examples/apply_quickstart.py`.
 
 **Hand-off (`gate`, default on).** By default the weight is smoothly returned to the
 prior above a `qT` hand-off window, so a merged/matched prior keeps its own

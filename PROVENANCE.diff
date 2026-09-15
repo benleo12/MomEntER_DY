@@ -1,3 +1,12 @@
+# v6.1 (2026-09-15, this repository): documentation and one helper only. apply_lambdas.py gains theory_band(), the band rule
+# of the calculation (Wan-Li Ju): per scale the larger of the x2 and x1/2 deviations in each direction, clipped at zero, the
+# 14 scales (C0_np, kappa_np, MuBeam, MuSoft, MuFac, MuHard, MuCt, MuBF, NuBeam, NuSoft, MuF, MuR, MuRF, MuFtran) added in
+# quadrature, up and down separately -- the rule of the paper figures (figs/rivet_style.py: scheme_band), not the envelope
+# over the 28 variations that the v6 docstrings and the description string of lambda_export_variations.json named. Those
+# strings are corrected (the description string is the only byte that changed in products/; every lambda, C and K is
+# identical to v6), final_plots_pro.py writes the corrected string, the quick-start example uses theory_band(), and the
+# stale moment counts in the apply_lambdas.py header (17/16) read 15/14. No pipeline stage changed.
+#
 # v6 (2026-09-12, this repository): every product in products/ was produced by exactly the code fingerprinted in
 # CODE_MD5.txt -- the production run tree and this repository were byte-identical for every pipeline file, so
 # there is no production/release diff for v6; the diff below is the historical v5 -> release one.
