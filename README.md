@@ -240,6 +240,16 @@ checked event-by-event against the pipeline's reference weights
 tie this repository to the paper's runs.
 
 
+## Agreement in pull terms
+
+`figs/pulls.py data/H_<tag>.npz` prints the chi-square per bin of the normalised rT, acoplanarity
+and qT spectra against the calculation, with the Monte-Carlo uncertainties of the calculation
+and of the sample (from the per-bin sums of squared weights stored in the histogram inputs),
+below the hand-off (qT < 120 GeV) and over the full acoplanarity range, plus the fraction of
+bins within one sigma and inside the calculation's scale band. These are the agreement numbers
+quoted in the paper. `H_<tag>_s7.npz` and `H_<tag>_s2024.npz` are the same inputs for the
+seed-study sets.
+
 ## Paper figures
 
 `bash figs/make_figures.sh` regenerates the paper figures from the shipped histogram inputs in `figs/data/` (see `figs/README.md`).
