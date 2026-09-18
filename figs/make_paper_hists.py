@@ -138,6 +138,7 @@ except Exception as ex: print(f"  export weights not compared: {ex}")
 
 ED = {"q": AE, "r": TR["e"], "d": TD["e"]}
 H  = {k: np.zeros((len(e) - 1, LAMM.shape[1] + 1)) for k, e in ED.items()}    # column 0 = prior, 1 = central, 2.. schemes
+H2 = {k: np.zeros((len(e) - 1, LAMM.shape[1] + 1)) for k, e in ED.items()}    # per-bin sum of squared weights (statistical error of the sample)
 s1 = s2 = 0.0; maxdiff = 0.0; over = np.zeros(3)                                  # events above each axis' last edge
 for a in range(0, N, CH):
     b = min(a + CH, N)
@@ -151,7 +152,9 @@ for a in range(0, N, CH):
         m_ = np.isfinite(wexp[a:b]); maxdiff = max(maxdiff, float(np.max(np.abs(WR[m_, 0] - wexp[a:b][m_]) / np.maximum(np.abs(wexp[a:b][m_]), 1e-300))) if m_.any() else 0.0)
     for k, x in (("q", Q[a:b]), ("r", Q[a:b] / M[a:b]), ("d", np.pi - D[a:b])):
         e = ED[k]; i = np.searchsorted(e, x, side="right") - 1; okb = (i >= 0) & (i < len(e) - 1)
-        for c in range(WS.shape[1]): H[k][:, c] += np.bincount(i[okb], weights=WS[okb, c], minlength=len(e) - 1)
+        for c in range(WS.shape[1]):
+            H[k][:, c]  += np.bincount(i[okb], weights=WS[okb, c],      minlength=len(e) - 1)
+            H2[k][:, c] += np.bincount(i[okb], weights=WS[okb, c] ** 2, minlength=len(e) - 1)
     w = WR[:, 0]; s1 += w.sum(); s2 += np.sum(w**2)
     print(f"    {b:,}/{N:,}", flush=True)
 neff = s1**2 / s2 / N
@@ -164,7 +167,7 @@ for k, T, lim in (("q", TQa, QTH), ("r", TR, 1e9), ("d", TD, 1e9)):
     print(f"  {k}: prior/theory median |dev| {100*np.median(np.abs(p_-1)):.2f}% (max {100*np.max(np.abs(p_-1)):.1f}%)  reweighted {100*np.median(np.abs(r_-1)):.2f}% (max {100*np.max(np.abs(r_-1)):.1f}%)", flush=True)
 
 np.savez(OUT, tag=TAG, names=np.array(names), schemes=np.array(schs), N=N, neff=neff, gated=GATED, gate_window=np.array([GLO, GHI]),
-         q_e=AE, q_H=H["q"], q_dat=ADAT, q_err=AERR, **{f"q_{k}": v for k, v in TQa.items() if k != "e"},
-         r_e=TR["e"], r_H=H["r"], **{f"r_{k}": v for k, v in TR.items() if k != "e"},
-         d_e=TD["e"], d_H=H["d"], **{f"d_{k}": v for k, v in TD.items() if k != "e"})
+         q_e=AE, q_H=H["q"], q_H2=H2["q"], q_dat=ADAT, q_err=AERR, **{f"q_{k}": v for k, v in TQa.items() if k != "e"},
+         r_e=TR["e"], r_H=H["r"], r_H2=H2["r"], **{f"r_{k}": v for k, v in TR.items() if k != "e"},
+         d_e=TD["e"], d_H=H["d"], d_H2=H2["d"], **{f"d_{k}": v for k, v in TD.items() if k != "e"})
 print(f"  wrote {OUT}", flush=True)
