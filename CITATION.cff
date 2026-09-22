@@ -26,7 +26,7 @@ repository-code: "https://github.com/benleo12/MomEntER_DY"
 license: BSD-3-Clause
 preferred-citation:
   type: article
-  title: "Lattice-Constrained Drell-Yan Resummation as Positive-Weight Events"
+  title: "Drell-Yan lepton pair production from low to high transverse momentum"
   authors:
     - family-names: Assi
       given-names: Benoît

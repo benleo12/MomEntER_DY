@@ -3,7 +3,7 @@
 **Mom**ent **En**tropy **R**eweighting for **D**rell–**Y**an.
 
 This repository is the code that produces the Drell–Yan particle-level results of
-*"Lattice-Constrained Drell-Yan Resummation as Positive-Weight Events"*. It transfers
+*"Drell-Yan lepton pair production from low to high transverse momentum"*. It transfers
 the accuracy of an N⁴LL′+N³LO resummed calculation — with a Collins–Soper kernel
 fixed *ab initio* by lattice QCD — onto a standard Monte-Carlo event sample, as
 **strictly positive, event-local weights**.
@@ -134,6 +134,8 @@ moments in `moments_<ENERGY>/` (shipped here for 13TeV, 13p6TeV and 13TeV_powheg
 | `final_plots_pro.py` | fit, uncertainty propagation, plots, and the `lambda_export.json` export |
 | `run_pipeline.sh` | end-to-end driver (pools → prune → fit → select → export) |
 | `verify.py` | reproduction checks (see [`VERIFY.md`](VERIFY.md)) |
+| `figs/make_paper_hists.py`, `figs/pulls.py` | histogram inputs of the paper figures (prior, central and 28 schemes, with per-bin sums of squared weights) and the chi-square per bin against the calculation quoted in the paper |
+| `figs/data/H_<tag>.npz` | those inputs for the three products and the four seed-study sets (`_s7`, `_s2024`) |
 | `moments_<E>/` | analytic N⁴LL′+N³LO moments and distributions, and the selected moment set, per energy |
 | `products/<E>/` | **the delivered result**: `lambda_export.json` (+ 28-variation file, and for priors that carry generator scale weights a `lambda_export_prior_variations.json`) and the final plots |
 | `examples/powheg_prior.md` | end-to-end recipe for reproducing the POWHEG+Pythia8 prior and its 7-point variations |
@@ -206,10 +208,12 @@ residual is dropped, the set is re-pruned and validated again, at most three tim
 Repeating the selection on the current samples with other random fit samples (seeds 7 and
 2024 against the production seed 42) keeps every admitted moment where the production sample
 had pruned five: at 13 TeV 21 and 20 moments against 15 (12 and 13 of the 15 in common), at
-13.6 TeV 19 and 18 against 14 (14 and 13 in common). The shipped-weight agreement with the
-calculation (trusted medians r_T / acoplanarity / q_T, in %) moves by at most 0.4 points:
-13 TeV 3.37/1.29/2.48 (production), 3.21/1.22/2.34 (seed 7), 3.49/1.34/2.22 (seed 2024);
-13.6 TeV 3.10/2.41/2.22, 2.89/2.21/1.86, 3.19/2.48/2.56. The POWHEG set was unchanged under
+13.6 TeV 19 and 18 against 14 (14 and 13 in common). The reweighted distributions of the
+other sets differ from the production set by less than 2% in every bin at 13 TeV and by up
+to 4.4% at 13.6 TeV, in the sparse bins next to the hand-off. In the paper's measure, the
+chi-square per bin against the calculation (r_T / acoplanarity / q_T, `figs/pulls.py`):
+13 TeV 2.1/0.3/2.3 (production), 1.6/0.2/1.9 (seed 7), 1.2/0.3/1.5 (seed 2024);
+13.6 TeV 5.1/0.8/3.6, 2.8/0.9/2.1, 4.1/0.8/3.0. The POWHEG set was unchanged under
 the same test on 2026-09-04 and was not repeated. The out-of-sample selection additionally
 refuses any moment set that agrees with the calculation *worse than the unreweighted
 prior* on any validation distribution.
