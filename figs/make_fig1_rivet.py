@@ -187,7 +187,7 @@ B.set_ylabel("Theory~/~Data"); B.set_ylim(0.955, 1.045); B.yaxis.set_major_locat
 for a, (l, h, lab, col, hatch) in zip(ax[2:], [
         (lo_fo, hi_fo, "fixed order",             GREEN,  None),
         (lo_re, hi_re, "resummation",             ORANGE, None),
-        (lo_np, hi_np, "Collins-Soper (lattice)", PURPLE, None),
+        (lo_np, hi_np, r"non-perturbative: CS kernel, $\kappa_{\rm NP}$", PURPLE, None),
         (th*(1-rel_num), th*(1+rel_num), "MC stat.", "0.35", "////")]):
     a.axhline(1, color="k", lw=0.6, zorder=1)
     if hatch: a.stairs(h[m]/th[m], E, baseline=l[m]/th[m], fill=False, edgecolor=col, lw=0, hatch=hatch)
