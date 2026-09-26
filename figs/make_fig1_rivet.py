@@ -194,7 +194,9 @@ B.set_ylabel("Theory~/~Data"); B.set_ylim(0.955, 1.045); B.yaxis.set_major_locat
 # are not stacked.
 import matplotlib.patches as mpatches
 DARKPURPLE = "#4b2e83"
-NP_CS, NP_KA = "Collins-Soper kernel (lattice QCD)", r"$\kappa_{\rm NP}$ (fit to data)"
+# "alone": each band is that input's own variation around the central value; they overlap and are
+# not a total and a part of it (Hoeche read the filled band as the combination, 2026-09-26).
+NP_CS, NP_KA = "Collins-Soper kernel alone (lattice QCD)", r"$\kappa_{\rm NP}$ alone (fit to data)"
 panels = [("fixed order",      [(lo_fo, hi_fo, GREEN,  None)]),
           ("resummation, transition", [(lo_re, hi_re, ORANGE, None)]),   # the 8 resummation scales and the MuFtran pair
           ("non-perturbative", [(lo_cs, hi_cs, PURPLE, None), (lo_ka, hi_ka, DARKPURPLE, "\\\\\\\\")]),
