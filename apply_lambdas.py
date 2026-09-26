@@ -151,8 +151,8 @@ def schemes(energy="13TeV", jpath=None):
 # The theory band from the 29 scheme histograms: Wan-Li Ju's prescription (his notebook, cell rTSV).
 #   up   = sqrt( sum over scales s of  max(h[2s] - h[central], h[0p5s] - h[central], 0)^2 )
 #   down = sqrt( sum over scales s of  min(h[2s] - h[central], h[0p5s] - h[central], 0)^2 )
-# Each of the 14 scales contributes the larger of its two deviations (x2, x1/2) in each direction,
-# clipped at zero; the scales add in quadrature, up and down separately.  The three fixed-order
+# Each of the 14 scales contributes the larger of its two deviations in each direction, clipped at
+# zero (the variations are labelled 0p5 and 2: a factor of two for the scales, the quoted uncertainty ranges for C0_np, kappa_np and MuFtran (Ju, 2026-09-26)); the scales add in quadrature, up and down separately.  The three fixed-order
 # members (MuR, MuF, MuRF) are three terms, MuFtran (varied on the resummed and fixed-order sides
 # together) one.  This is NOT the envelope over the 28 variations, which keeps only the largest
 # scale per bin and is smaller by up to the square root of the number of scales that matter there.

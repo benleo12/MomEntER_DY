@@ -124,7 +124,8 @@ print(f"  numerical unc (real, fiducial): median "
       f"{100*np.median(rel_num[k]):.2f}%  max {100*rel_num[k].max():.2f}%")
 
 # Band construction following Wan-Li: the 28 variations are paired into 14 knobs
-# (x1/2 and x2 of each scale), and the per-knob deviations are added in QUADRATURE,
+# (labelled 0p5 and 2: a factor of two for the scales, the quoted uncertainties for c0, kappa_NP
+# and the transition profile), and the per-knob deviations are added in QUADRATURE,
 #   err_up^2 = sum_knob max(r_up-c, r_dn-c, 0)^2   (down analog),
 # NOT as a min/max envelope. Each variation is normalized by its own sigma_tot.
 def knob_of(k):

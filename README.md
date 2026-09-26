@@ -43,8 +43,10 @@ You supply four per-event numbers: the generator weight `w0`, the dilepton `qT` 
 `m_ll` [GeV], and the acoplanarity `dphi_ll = π − Δφ_ll`.
 The 28 scale/NP variations are `reweight_scheme(..., scheme=s)` for `s in schemes()`.
 Histogram each scheme and pass the histograms to `theory_band()`, which applies the
-calculation's own rule (Wan-Li Ju): per scale the larger of the ×2 and ×½ deviations in
-each direction, the 14 scales added in quadrature, up and down separately. It is not the
+calculation's own rule (Wan-Li Ju): per scale the larger of its two deviations in each
+direction (labelled 0p5 and 2: a factor of two for the scales, the quoted uncertainty
+ranges for `C0_np`, `kappa_np` and `MuFtran`), the 14 scales added in quadrature, up and
+down separately. It is not the
 envelope over the 28 variations, which keeps only the largest scale per bin. See `examples/apply_quickstart.py`.
 
 **Hand-off (`gate`, default on).** By default the weight is smoothly returned to the

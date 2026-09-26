@@ -7,10 +7,11 @@ ebf3886e645f37049800b6c6f3250082  grow_select.py
 b4a48f169637e52bb5734fec9e02ca48  fit_health_v2.py
 e00c88a94de73e894a441c1c65a84113  health_shrink.py
 9a2321daa5f2496ca5966975df7b6f14  check_smallqt.py
-66cf18b9e2fdd45bd2446167726c493c  final_plots_pro.py
+3fbee272337ce63140632cef7b350478  final_plots_pro.py
 cc083f895fe8ac63620f4553c65b87fc  validate_shipped_weights.py
-8c036823ba261930dd029d4f4c503659  apply_lambdas.py
+e7a9016a7ed2d89c2a4cf0f29f2f1183  apply_lambdas.py
 7106137b0e588969ed2e7669e64631ee  verify.py
 45cff079be4f988462f0ecc8724897ef  add_rate_block.py
 # v6 (2026-09-12): the products in products/ were produced by exactly this code (the run tree matched these hashes file for file). Changes since v5.2: select_stable.py one-sided overflow guard; optimizer_DY_unc.py step-limited fits with every pull below one sigma accepted, and the log-weight cap handled by Marquardt damping (floored scale, direction search separate from the acceptance attempts) instead of scaling the whole step; add_rate_block.py no longer writes prior_mean_stored_weight. Details in PROVENANCE.diff.
 # v6.1 (2026-09-15): documentation and one helper, no change to any fitted number. apply_lambdas.py gains theory_band(), Wan-Li Ju's band rule (per scale the larger of the x2 and x1/2 deviations in each direction, clipped at zero, the 14 scales added in quadrature, up and down separately; the rule of the paper figures), and its docstrings no longer call the band an envelope; the stale moment counts in its header (17/16) now read 15/14. The description string of every lambda_export_variations.json says the same and is the only byte that changed in products/ (every lambda, C and K is identical to v6); final_plots_pro.py writes the corrected string; the quick-start example builds the band with theory_band().
+# v6.2 (2026-09-26): comments and the JSON description string only, no change to any number. The 0p5/2 labels of C0_np, kappa_np and MuFtran are generic (Ju): the variations are c0 +- 0.012 GeV^2, kappa_NP +- 0.5 GeV^-2 and the transition-profile ranges of the paper; B_NP is fixed. apply_lambdas.py and final_plots_pro.py re-fingerprinted for that wording.
