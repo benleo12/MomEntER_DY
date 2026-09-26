@@ -137,6 +137,8 @@ knobs = {}
 for k, v in vmap.items():
     knobs.setdefault(knob_of(k), []).append(norm_to_unit(rebin(te, np.array(v), edges)))
 def grp_of(name):
+    """cs: C0_np; kappa: kappa_np; fo: MuR, MuF, MuRF; resum: the eight resummation scales AND the
+    MuFtran pair (the transition variation, applied to the resummed and the fixed-order part)."""
     s = name.upper()
     if "C0_NP" in s: return "cs"
     if "KAPPA_NP" in s: return "kappa"
@@ -193,7 +195,7 @@ import matplotlib.patches as mpatches
 DARKPURPLE = "#4b2e83"
 NP_CS, NP_KA = "Collins-Soper kernel (lattice QCD)", r"$\kappa_{\rm NP}$ (fit to data)"
 panels = [("fixed order",      [(lo_fo, hi_fo, GREEN,  None)]),
-          ("resummation",      [(lo_re, hi_re, ORANGE, None)]),
+          ("resummation, transition", [(lo_re, hi_re, ORANGE, None)]),   # the 8 resummation scales and the MuFtran pair
           ("non-perturbative", [(lo_cs, hi_cs, PURPLE, None), (lo_ka, hi_ka, DARKPURPLE, "\\\\\\\\")]),
           ("MC stat.",         [(th*(1-rel_num), th*(1+rel_num), "0.35", "////")])]
 for a, (lab, bands) in zip(ax[2:], panels):
