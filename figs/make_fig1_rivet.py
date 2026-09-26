@@ -1,9 +1,9 @@
-"""Fig. 3 of the PRL (fig:calc): the N4LL'+N3LO calculation in the ATLAS fiducial phase
+"""Fig. 1 of the PRL (fig:calc): the N4LL'+N3LO calculation in the ATLAS fiducial phase
 space of arXiv:1912.02844, compared with the measured normalized qT spectrum,
 with the theory uncertainty decomposed into fixed-order, resummation, and
-non-perturbative (Collins-Soper kernel, lattice-constrained) components.
+non-perturbative (the lattice-constrained Collins-Soper kernel and kappa_NP, combined) components.
 
-  python make_fig1.py [outfile.pdf]
+  python make_fig1_rivet.py [outfile.pdf]
 """
 import os, sys, re
 for v in ("OMP_NUM_THREADS","OPENBLAS_NUM_THREADS","MKL_NUM_THREADS"): os.environ.setdefault(v,"2")

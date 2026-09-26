@@ -1,5 +1,6 @@
 """Rivet make-plots house style (Stefan's figures): log-x over the full range, log-y spectrum on top with the
-reference (data or calculation) as black points, MC as step histograms with shaded uncertainty bands, and a
+reference as black points when it is data and as a black histogram when it is a calculation (a prediction
+should not look like measured points, Hoeche), MC as step histograms with shaded uncertainty bands, and a
 MC/Data (MC/Theory) panel spanning 0.6-1.4 underneath.  Everything is drawn from the npz files written on
 Perlmutter, so the style can be iterated without touching the samples.
 
@@ -136,20 +137,21 @@ def finish(fig, out):
     plt.close(fig); print(f"  wrote {out}.pdf/.png")
 
 # ---------------- one observable, reference = data or theory ---------------------------------------------
-def draw(ax, ar, e, ref, ref_err, pri, rew, rlo, rhi, prior_label, ref_label, ref_band=None, ref_hatch=None, xscale="log", xlo=None, rew_label="MaxEnt reweighted", corner="lower left", xhi=None):
-    """ref/ref_err: reference (points); ref_band: (lo,hi) shaded reference band (theory scale); ref_hatch: (lo,hi) hatched
+def draw(ax, ar, e, ref, ref_err, pri, rew, rlo, rhi, prior_label, ref_label, ref_band=None, ref_hatch=None, xscale="log", xlo=None, rew_label="MaxEnt reweighted", corner="lower left", xhi=None, ref_style="points"):
+    """ref/ref_err: reference, drawn as points (data) or, with ref_style="hist", as a black step histogram (a calculation); ref_band: (lo,hi) shaded reference band (theory scale); ref_hatch: (lo,hi) hatched
     (theory MC-stat).  MC bins with no sample content are masked."""
     good = np.isfinite(ref) & (ref > 0); has = good & (pri > 0.05 * np.where(good, ref, 1))   # MC bins with <5% of the reference content are not a comparison
     nan = lambda y, m: np.where(m, y, np.nan)
     if ref_band is not None: bandfill(ax, e, nan(ref_band[0], good), nan(ref_band[1], good), GREY, alpha=0.35)
-    points(ax, e, nan(ref, good), nan(ref_err, good), label=ref_label)
+    if ref_style == "hist": steps(ax, e, nan(ref, good), color="k", lw=1.2, zorder=5, label=ref_label)   # a calculation is a histogram, not data points (Hoeche)
+    else:                   points(ax, e, nan(ref, good), nan(ref_err, good), label=ref_label)
     steps(ax, e, nan(pri, has), color=PRI, lw=1, zorder=6, label=prior_label)
     bandfill(ax, e, nan(rlo, has), nan(rhi, has), REW, alpha=0.20, zorder=7); steps(ax, e, nan(rew, has), color=REW, lw=1, zorder=7, label=rew_label)
     r = lambda y, m: np.where(m, y / np.where(good, ref, 1), np.nan)
     if ref_band is not None: bandfill(ar, e, r(ref_band[0], good), r(ref_band[1], good), GREY, alpha=0.35, label="scale")
     else:                    bandfill(ar, e, r(ref - ref_err, good), r(ref + ref_err, good), "0.75", alpha=0.5)
     if ref_hatch is not None: bandfill(ar, e, r(ref_hatch[0], good), r(ref_hatch[1], good), "0.35", hatch="////", label="MC stat.")
-    points(ar, e, r(ref, good), r(ref_err, good))
+    if ref_style != "hist": points(ar, e, r(ref, good), r(ref_err, good))   # a histogram reference is the line at 1; its MC error is the hatched band
     steps(ar, e, r(pri, has), color=PRI, lw=1, zorder=6); bandfill(ar, e, r(rlo, has), r(rhi, has), REW, alpha=0.20, zorder=7); steps(ar, e, r(rew, has), color=REW, lw=1, zorder=7)
     if xscale == "log": ax.set_xscale("log"); ax.set_xlim(xlo if xlo is not None else e[0], xhi if xhi is not None else e[-1])
     else: ax.set_xlim(e[0], xhi if xhi is not None else e[-1])
@@ -223,7 +225,7 @@ def thy_one(ax, ar, z, key, prior_label, title):
     corner = "upper right" if (ROW or key == "d") else "lower left"
     decorate(ax, ar, THY_TITLE[key], THY[key]["yl"], "Ratio to calculation", THY[key]["xl"], notes=(title, r"$m_{ll}\geq 40$ GeV"), corner=corner)
     return draw(ax, ar, e, T["cen"], 0.5 * (T["sthi"] - T["stlo"]), pri, rew, rlo, rhi, prior_label, THY_LABEL,
-                ref_band=(T["slo"], T["shi"]), ref_hatch=(T["stlo"], T["sthi"]), xscale=THY[key]["xs"], xlo=THY[key]["xlo"], rew_label=rew_label_for(prior_label), corner=corner)
+                ref_band=(T["slo"], T["shi"]), ref_hatch=(T["stlo"], T["sthi"]), xscale=THY[key]["xs"], xlo=THY[key]["xlo"], rew_label=rew_label_for(prior_label), corner=corner, ref_style="hist")
 
 def thy(npz, pre, prior_label, title):
     z = np.load(npz, allow_pickle=True); res = {}
