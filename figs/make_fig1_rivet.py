@@ -1,7 +1,8 @@
 """Fig. 1 of the PRL (fig:calc): the N4LL'+N3LO calculation in the ATLAS fiducial phase
 space of arXiv:1912.02844, compared with the measured normalized qT spectrum,
 with the theory uncertainty decomposed into fixed-order, resummation, and
-non-perturbative (the lattice-constrained Collins-Soper kernel and kappa_NP, combined) components.
+non-perturbative components; the non-perturbative panel shows the lattice-determined Collins-Soper
+kernel (calculated) as a filled band and the width kappa_NP (fitted to data) as a hatched band.
 
   python make_fig1_rivet.py [outfile.pdf]
 """
@@ -184,16 +185,27 @@ B.stairs(th[m]/dat[m], E, color=RED, lw=1, zorder=7)
 B.errorbar(ctr[m], np.ones(m.sum()), yerr=[dem[m]/dat[m], dep[m]/dat[m]], xerr=wid[m]/2, fmt="o",
            ms=2, lw=1, color="k", capsize=0, zorder=25)
 B.set_ylabel("Theory~/~Data"); B.set_ylim(0.955, 1.045); B.yaxis.set_major_locator(MultipleLocator(0.02))
-for a, (l, h, lab, col, hatch) in zip(ax[2:], [
-        (lo_fo, hi_fo, "fixed order",             GREEN,  None),
-        (lo_re, hi_re, "resummation",             ORANGE, None),
-        (lo_np, hi_np, r"non-perturbative: CS kernel, $\kappa_{\rm NP}$", PURPLE, None),
-        (th*(1-rel_num), th*(1+rel_num), "MC stat.", "0.35", "////")]):
+# The non-perturbative panel keeps the two inputs apart (Hoeche, Campbell): the Collins-Soper kernel
+# is calculated (lattice QCD) and drawn filled like the other calculated bands; kappa_NP is the one
+# parameter fitted to data and is drawn hatched.  Each band is its own per-scale variation, the two
+# are not stacked.
+import matplotlib.patches as mpatches
+DARKPURPLE = "#4b2e83"
+NP_CS, NP_KA = "Collins-Soper kernel (lattice QCD)", r"$\kappa_{\rm NP}$ (fit to data)"
+panels = [("fixed order",      [(lo_fo, hi_fo, GREEN,  None)]),
+          ("resummation",      [(lo_re, hi_re, ORANGE, None)]),
+          ("non-perturbative", [(lo_cs, hi_cs, PURPLE, None), (lo_ka, hi_ka, DARKPURPLE, "\\\\\\\\")]),
+          ("MC stat.",         [(th*(1-rel_num), th*(1+rel_num), "0.35", "////")])]
+for a, (lab, bands) in zip(ax[2:], panels):
     a.axhline(1, color="k", lw=0.6, zorder=1)
-    if hatch: a.stairs(h[m]/th[m], E, baseline=l[m]/th[m], fill=False, edgecolor=col, lw=0, hatch=hatch)
-    else:     a.stairs(h[m]/th[m], E, baseline=l[m]/th[m], fill=True, color=col, alpha=0.45, lw=0)
+    for l, h, col, hatch in bands:
+        if hatch: a.stairs(h[m]/th[m], E, baseline=l[m]/th[m], fill=False, edgecolor=col, lw=0, hatch=hatch, zorder=3)
+        else:     a.stairs(h[m]/th[m], E, baseline=l[m]/th[m], fill=True, color=col, alpha=0.45, lw=0, zorder=2)
     a.set_ylim(0.955, 1.045); a.yaxis.set_major_locator(MultipleLocator(0.02))
     a.text(0.03, 0.10, lab, transform=a.transAxes, fontsize=8)
+    if len(bands) > 1:
+        a.legend([mpatches.Patch(facecolor=PURPLE, alpha=0.45, lw=0), mpatches.Patch(facecolor="none", edgecolor=DARKPURPLE, hatch="\\\\\\\\", lw=0)],
+                 [NP_CS, NP_KA], loc="lower right", fontsize=7, handlelength=1.8, handleheight=0.9, borderaxespad=0.4, labelspacing=0.3)
 ax[3].set_ylabel("ratio to central", labelpad=6)
 ax[-1].set_xlabel(r"$q_\mathrm{T}=p_\mathrm{T}^{\ell\ell}$ [GeV]", loc="right")
 for a in ax: a.set_xscale("log")
