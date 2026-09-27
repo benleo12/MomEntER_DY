@@ -113,7 +113,7 @@ on all events.
 ### 2. Reproduce or re-fit from scratch
 
 `run_pipeline.sh <ENERGY>` runs the full chain — candidate pools → stability prune →
-Newton fit → out-of-sample model selection → export — for any prior:
+Newton fit → validation veto → export — for any prior:
 
 ```bash
 ./run_pipeline.sh 13TeV
@@ -214,10 +214,11 @@ had pruned five: at 13 TeV 21 and 20 moments against 15 (12 and 13 of the 15 in 
 13.6 TeV 19 and 18 against 14 (14 and 13 in common). The reweighted distributions of the
 other sets differ from the production set by less than 2% in every bin at 13 TeV and by up
 to 4.4% at 13.6 TeV, in the sparse bins next to the hand-off. In the paper's measure, the
-chi-square per bin against the calculation (r_T / acoplanarity / q_T, `figs/pulls.py`):
-13 TeV 2.1/0.3/2.3 (production), 1.6/0.2/1.9 (seed 7), 1.2/0.3/1.5 (seed 2024);
-13.6 TeV 5.1/0.8/3.6, 2.8/0.9/2.1, 4.1/0.8/3.0. The POWHEG set was unchanged under
-the same test on 2026-09-04 and was not repeated. The out-of-sample selection additionally
+chi-square per bin against the calculation (r_T / acoplanarity / q_T, `figs/pulls.py`, the
+calculation's fine-bin Monte-Carlo errors merged in quadrature):
+13 TeV 5.3/1.0/2.3 (production), 4.1/0.8/1.9 (seed 7), 3.3/1.0/1.5 (seed 2024);
+13.6 TeV 11.0/2.8/3.6, 6.4/3.2/2.1, 9.7/2.7/3.0. The POWHEG set was unchanged under
+the same test on 2026-09-04 and was not repeated. The validation veto additionally
 refuses any moment set that agrees with the calculation *worse than the unreweighted
 prior* on any validation distribution.
 
