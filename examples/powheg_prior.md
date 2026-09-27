@@ -1,18 +1,18 @@
 # Building a POWHEG+Pythia8 prior (13 TeV)
 
-> **Shipped configuration.** `products/13TeV_powheg/` was produced from a replica of
-> the ATLAS MC15 sample DSID 361106: POWHEG-BOX-**V1** Z
+> **Shipped configuration.** `products/13TeV_powheg/` was produced from a sample we
+> generated in the configuration of the public ATLAS job options for POWHEG+Pythia 8
+> Z→ee production (DSID 361106): POWHEG-BOX-**V1** Z
 > ([`powheg_input_361106`](powheg_input_361106), `mass_low = 35` GeV) showered with
 > **Pythia 8.186** using the AZNLO tune + CTEQ6L1 and Photos++ for QED FSR
 > ([`pythia_aznlo_8186_photos.cmnd`](pythia_aznlo_8186_photos.cmnd)), dressed
-> leptons (ΔR < 0.1), analysed for m_ll > 40 GeV. It validates against the ATLAS
-> sample at the 0.1% level where the two overlap.
+> leptons (ΔR < 0.1), analysed for m_ll > 40 GeV.
 
 The recipe below builds a comparable sample with the current POWHEG-BOX-V2 and
 shower-veto matching, carrying 7-point matrix-element scale variations — use it as a
 template for putting your own generator through the same pipeline.
 
-Everything below was used to produce the shipped numbers. All the scripts referenced
+The shipped product did not use this V2 recipe; it is a template. All the scripts referenced
 live in this `examples/` directory.
 
 ## 1. Generate the NLO events (POWHEG-BOX-V2, Z process)
@@ -83,10 +83,9 @@ central weight and `w1002..w1007` are the six scale variations of the same event
 
     ./run_pipeline.sh 13TeV_powheg
 
-Selection screens and pruning run on a 2M-event subsample; the delivered multipliers
-are refit on the full sample. On this prior the procedure keeps 61 moments
-(winner pool: tau2.0) and reproduces the calculation to 1.1% in rT, 2.2% in
-the acoplanarity and 1.7% in qT, out of sample.
+Selection screens and pruning run on a fixed 5M-event subsample; the delivered multipliers
+are refit on the full sample. On the shipped POWHEG prior the procedure keeps 19 moments;
+the agreement with the calculation in pull terms is in the README.
 
 To also get the shower-scale band, fit one multiplier set per variation (each on its
 own weight column) and take the envelope over the seven resulting samples. The

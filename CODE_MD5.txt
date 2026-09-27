@@ -1,4 +1,4 @@
-f0d0473c0f172724e54a4f9c7027995f  run_pipeline.sh
+dd9b267d33598c699676e222b80dff98  run_pipeline.sh
 45170741899d4d71b065d6589fce338c  optimizer_DY_unc.py
 26c3a6dab6b6a2e5b5e03be2d7315575  build_tau_sets.py
 b01333ba81ec690b3ba2f76f2aadd399  admit_prune.py
@@ -9,9 +9,10 @@ e00c88a94de73e894a441c1c65a84113  health_shrink.py
 9a2321daa5f2496ca5966975df7b6f14  check_smallqt.py
 3fbee272337ce63140632cef7b350478  final_plots_pro.py
 cc083f895fe8ac63620f4553c65b87fc  validate_shipped_weights.py
-e7a9016a7ed2d89c2a4cf0f29f2f1183  apply_lambdas.py
-7106137b0e588969ed2e7669e64631ee  verify.py
+85c08eb065549091f59cfae00df9ced3  apply_lambdas.py
+a46202e145a49c4bdf0d56d33332870a  verify.py
 45cff079be4f988462f0ecc8724897ef  add_rate_block.py
 # v6 (2026-09-12): the products in products/ were produced by exactly this code (the run tree matched these hashes file for file). Changes since v5.2: select_stable.py one-sided overflow guard; optimizer_DY_unc.py step-limited fits with every pull below one sigma accepted, and the log-weight cap handled by Marquardt damping (floored scale, direction search separate from the acceptance attempts) instead of scaling the whole step; add_rate_block.py no longer writes prior_mean_stored_weight. Details in PROVENANCE.diff.
 # v6.1 (2026-09-15): documentation and one helper, no change to any fitted number. apply_lambdas.py gains theory_band(), Wan-Li Ju's band rule (per scale the larger of the x2 and x1/2 deviations in each direction, clipped at zero, the 14 scales added in quadrature, up and down separately; the rule of the paper figures), and its docstrings no longer call the band an envelope; the stale moment counts in its header (17/16) now read 15/14. The description string of every lambda_export_variations.json says the same and is the only byte that changed in products/ (every lambda, C and K is identical to v6); final_plots_pro.py writes the corrected string; the quick-start example builds the band with theory_band().
 # v6.2 (2026-09-26): comments and the JSON description string only, no change to any number. The 0p5/2 labels of C0_np, kappa_np and MuFtran are generic (Ju): the variations are c0 +- 0.012 GeV^2, kappa_NP +- 0.5 GeV^-2 and the transition-profile ranges of the paper; B_NP is fixed. apply_lambdas.py and final_plots_pro.py re-fingerprinted for that wording.
+# v6.3 (2026-09-27): no change to any delivered number. apply_lambdas.py: the reweighted branch is not evaluated above the hand-off (no NaN from 0 x inf), the multiplicity restriction also acts with gate=False, restricted events keep their tail weight, inputs are validated, the JSON is cached. verify.py: L2 compares without rescaling and checks K; L1 probes the corners and the restriction. run_pipeline.sh: one comment (fit sample is 5M). Names and internal references removed from comments.

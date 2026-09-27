@@ -1,7 +1,7 @@
 """Paper histograms for one prior tag: prior, MaxEnt central and the 28 scheme columns, binned on
   q_T  : ATLAS 1912.02844 d27 edges (full range) -- theory N4LL'+N3LO mapped onto them below 200 GeV
-  r_T  : Wan-Li rTDist edges (moments dir CSV)
-  d    : acoplanarity pi-dphi, Wan-Li dphiDist edges
+  r_T  : the calculation's rTDist edges (moments dir CSV)
+  d    : acoplanarity pi-dphi, the calculation's dphiDist edges
 plus the theory central / per-knob-quadrature scale band / MC-stat band on the same edges.
 Weights are the SHIPPED ones: w = b(qT) w0 exp(lambda.phi - C) + (1-b) w0 with the export's gate window
 (POWHEG: window [1e9,2e9] => ungated).  The central column is cross-checked event by event against
@@ -81,7 +81,7 @@ def theory_m(path, mat):
 
 def atlas(hist):
     rows, inb = [], False
-    for line in open("atlas_data/ATLAS_2019_I1768911.yoda", errors="ignore"):
+    for line in open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "ATLAS_2019_I1768911.yoda"), errors="ignore"):
         if f"BEGIN YODA_SCATTER2D_V2 /REF/ATLAS_2019_I1768911/{hist}" in line: inb = True; continue
         if inb and line.startswith("END YODA"): break
         if inb:

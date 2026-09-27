@@ -22,7 +22,8 @@ penalized maximum-entropy dual
 L(λ) = log Z(λ)  −  Σ_k λ_k μ_k  +  ½ Σ_k σ_k² λ_k²
 ```
 
-against the analytic target moments `μ_k` (with `σ_k` their theory uncertainties).
+against the analytic target moments `μ_k` (with `σ_k` their Monte-Carlo uncertainties, the
+calculation's and the prior's in quadrature).
 The weight depends only on the event, so it can be applied during generation. The
 acoplanarity is the seed of the ATLAS φ\*_η observable (`φ*_η = tan(d/2) sin θ*_η`),
 so matching `d` also predicts φ\*.
@@ -43,7 +44,7 @@ You supply four per-event numbers: the generator weight `w0`, the dilepton `qT` 
 `m_ll` [GeV], and the acoplanarity `dphi_ll = π − Δφ_ll`.
 The 28 scale/NP variations are `reweight_scheme(..., scheme=s)` for `s in schemes()`.
 Histogram each scheme and pass the histograms to `theory_band()`, which applies the
-calculation's own rule (Wan-Li Ju): per scale the larger of its two deviations in each
+calculation's own rule: per scale the larger of its two deviations in each
 direction (labelled 0p5 and 2: a factor of two for the scales, the quoted uncertainty
 ranges for `C0_np`, `kappa_np` and `MuFtran`), the 14 scales added in quadrature, up and
 down separately. It is not the
@@ -100,7 +101,7 @@ The theory schemes revert to the central prior in the tail and the generator
 variations act only there, so the two tile the phase space without double counting.
 
 **Fit-sample recipe (default).** Statistical admission, stability pruning, and the
-out-of-sample model selection run on a fixed 5M-event subsample plus the extreme
+distribution veto (a set that describes any of the three validation distributions worse than the prior is refused) run on a fixed 5M-event subsample plus the extreme
 1e-5 tails of both observables. A moment is admitted only if this sample resolves
 its target to the calculation's own precision, and only if what it adds beyond the
 already-admitted moments is known better than a tenth of the prior's spread along
@@ -139,7 +140,7 @@ moments in `moments_<ENERGY>/` (shipped here for 13TeV, 13p6TeV and 13TeV_powheg
 | `figs/make_paper_hists.py`, `figs/pulls.py` | histogram inputs of the paper figures (prior, central and 28 schemes, with per-bin sums of squared weights) and the chi-square per bin against the calculation quoted in the paper |
 | `figs/data/H_<tag>.npz` | those inputs for the three products and the four seed-study sets (`_s7`, `_s2024`) |
 | `moments_<E>/` | analytic N⁴LL′+N³LO moments and distributions, and the selected moment set, per energy |
-| `products/<E>/` | **the delivered result**: `lambda_export.json` (+ 28-variation file, and for priors that carry generator scale weights a `lambda_export_prior_variations.json`) and the final plots |
+| `products/<E>/` | **the delivered result**: `lambda_export.json` (+ the 28-variation file) and the final plots |
 | `examples/powheg_prior.md` | end-to-end recipe for reproducing the POWHEG+Pythia8 prior and its 7-point variations |
 
 Three priors are shipped: `13TeV` and `13p6TeV` (Sherpa NLO multi-jet merged, the

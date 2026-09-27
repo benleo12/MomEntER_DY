@@ -5,7 +5,7 @@
 # [GATE_LO,GATE_HI]; GATE=0 exports the pure reweighting on every event.  Everything else is fixed.
 # SELECTOR CONFIGURATION (identical for every prior): stability prune with the stat(+)scale penalty
 # (SIG_MODE=statscale), ABSOLUTE floor MIN_EFF_EVENTS effective events (prior-agnostic),
-# at most 15 prune rounds, stability evaluated on ALL events, fits on the 2M subsample. Fits/exports use SIG_MODE=stat.
+# at most 15 prune rounds, stability evaluated on ALL events, fits on the 5M subsample (FIT_NEV). Fits/exports use SIG_MODE=stat.
 # CONTRACT: no per-prior branches, no per-run knobs. Every sample size below means
 # "all events of the prior" (NEV=2e8 clamps to the sample size) except the dual FITS,
 # which are always on the fixed 2M subsample. Identical settings for every prior.

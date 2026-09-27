@@ -17,10 +17,11 @@ generator's tail as well, rate=False drops K). Self-contained: reads only a lamb
 For each event you supply four numbers:
     w0       generator weight
     qT       dilepton pT             [GeV]
-    m_ll     dilepton invariant mass [GeV]
-    dphi_ll  = pi - Delta_phi_ll     (acoplanarity)
+    m_ll     dilepton invariant mass [GeV]  (must be > 0; the moments were derived for m_ll > 40 GeV)
+    dphi_ll  = pi - Delta_phi_ll     the ACOPLANARITY in [0, pi], not the raw Delta_phi
 Above qT = 200 GeV the weight reverts to the prior (w0); multiply that region by
-your own multijet + electroweak factor if desired.
+your own multijet + electroweak factor if desired.  Inputs outside their range raise
+ValueError; rounding noise below zero in the acoplanarity is clipped to zero.
 
 Usage:
     from apply_lambdas import reweight
@@ -36,9 +37,16 @@ The delivered products live in products/<energy>/:
     products/13p6TeV/...                           same at 13.6 TeV (14 moments)
     products/13TeV_powheg/...                      POWHEG (ATLAS 361106 config), 19 moments, ungated
 """
-import os, json, numpy as np
+import os, json, warnings, numpy as np
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
+_CACHE = {}
+def _load(path):
+    """the lambda_export file, read once per path (and re-read if it changes on disk)"""
+    key = (os.path.abspath(path), os.path.getmtime(path))
+    if key not in _CACHE:
+        _CACHE.clear(); _CACHE[key] = json.load(open(path))
+    return _CACHE[key]
 def _default(energy, variations=False):
     fn = "lambda_export_variations.json" if variations else "lambda_export.json"
     return os.path.join(_HERE, "products", energy, fn)
@@ -71,14 +79,25 @@ def features(names, rt, dphi):
 
 def _apply(w0, qT, m_ll, dphi_ll, names, lam, C, gat, gate=True, w0_tail=None, K=1.0,
            njet=None, njet_max=1, rate_tail=False):
-    w0, qT, m_ll, dphi_ll = map(np.asarray, (w0, qT, m_ll, dphi_ll))
-    logit = features(names, qT / m_ll, dphi_ll) @ np.asarray(lam)   # sum_k lambda_k phi_k
-    w_rew = w0 * np.exp(logit - C)                       # event-local: fixed shift, no renorm
+    w0, qT, m_ll, dphi_ll = (np.asarray(x, dtype=float) for x in (w0, qT, m_ll, dphi_ll))
+    if np.any(~(m_ll > 0)):
+        raise ValueError("m_ll must be > 0 for every event")
+    if np.any(dphi_ll < -1e-6) or np.any(dphi_ll > np.pi + 1e-6):
+        raise ValueError("dphi_ll is the acoplanarity pi - Delta_phi and must lie in [0, pi]")
+    dphi_ll = np.clip(dphi_ll, 0.0, np.pi)               # rounding noise at the edges
+    if np.any(m_ll < 40.0):
+        warnings.warn("events with m_ll < 40 GeV: the moments were derived for m_ll > 40 GeV", stacklevel=3)
+    wt = w0 if w0_tail is None else np.asarray(w0_tail, dtype=float)
+    expo = features(names, qT / m_ll, dphi_ll) @ np.asarray(lam) - C   # sum_k lambda_k phi_k - C
     if not gate:
-        return K * w_rew
+        w_rew = w0 * np.exp(expo)                        # event-local: fixed shift, no renorm
+        return _restrict(K * w_rew, (K if rate_tail else 1.0) * wt, njet, njet_max)
     lo, hi = gat['window_GeV']                           # smooth hand-off [120,200] GeV
     t = np.clip((qT - lo) / (hi - lo), 0, 1)
     beta = 1.0 - (6*t**5 - 15*t**4 + 10*t**3)            # 1 below lo, 0 above hi
+    # Above the hand-off (beta = 0) the reweighted branch is not used at all: it is not evaluated
+    # there, so an event far outside the fitted range cannot turn 0 x inf into NaN.
+    w_rew = np.where(beta > 0, w0 * np.exp(np.where(beta > 0, expo, 0.0)), 0.0)
     # Above the hand-off the sample is the generator's, so a generator variation weight
     # (e.g. one member of the 7-point muR/muF set) may be supplied for the tail branch.
     # Band recipe: the 28 theory schemes (w0_tail=None) combined per scale in quadrature by
@@ -86,7 +105,6 @@ def _apply(w0, qT, m_ll, dphi_ll, names, lam, C, gat, gate=True, w0_tail=None, K
     # w0_tail=w0_V) combined as the generator prescribes. The theory schemes revert to the
     # central prior in the tail (resummation is off there), the generator variations act
     # only in the tail, so the two tile the phase space without double counting.
-    wt = w0 if w0_tail is None else np.asarray(w0_tail)
     # The rate factor belongs where the calculation is in control.  Above the hand-off the sample is
     # the generator's, and its rate there is set by the Z+jets matrix elements, not by an inclusive
     # K-factor, so by default K multiplies the reweighted branch only (rate_tail=False).  The total
@@ -94,7 +112,7 @@ def _apply(w0, qT, m_ll, dphi_ll, names, lam, C, gat, gate=True, w0_tail=None, K
     # the older behaviour of scaling every event.  Both agree when there is no hand-off (POWHEG,
     # delivered ungated) or when K is 1.
     w = (K * beta) * w_rew + (1.0 - beta) * (K * wt if rate_tail else wt)
-    return _restrict(w, (K if rate_tail else 1.0) * w0, njet, njet_max)
+    return _restrict(w, (K if rate_tail else 1.0) * wt, njet, njet_max)
 
 
 def _restrict(w, w_prior, njet, njet_max):
@@ -104,9 +122,11 @@ def _restrict(w, w_prior, njet, njet_max):
     the merged prediction's uncertainty, which grows with the number of jets, by one taken from a
     calculation that has at most three hard partons.  Pass njet = the multiplicity of the hard
     process (the generator's merging multiplicity, NOT the number of reconstructed jets) to give the
-    weight only to events with njet <= njet_max; the rest keep the prior.  The multipliers themselves
-    do not depend on the multiplicity, so the same file serves either choice.  Note that restricting
-    the application changes sum(w) by the share the higher multiplicities carry."""
+    weight only to events with njet <= njet_max; the rest keep the prior weight (the tail weight
+    w0_tail when one is supplied, so that a generator variation stays with the events it belongs
+    to).  The multipliers were fitted with the weight on every event of the prior, so restricting
+    the application changes sum(w) by the share the higher multiplicities carry and the restricted
+    sample does not reproduce the target moments exactly."""
     if njet is None:
         return w
     return np.where(np.asarray(njet) <= njet_max, w, w_prior)
@@ -120,7 +140,7 @@ def reweight(w0, qT, m_ll, dphi_ll, energy="13TeV", jpath=None, gate=True, w0_ta
     pass it to apply the weight only to the 0-jet and 1-jet contributions (see _restrict).
     `rate_tail`: by default the rate factor K is applied only where the calculation is in control
     (the reweighted branch); set True to scale every event, including the generator's tail."""
-    d = json.load(open(jpath or _default(energy)))
+    d = _load(jpath or _default(energy))
     K = (d.get('rate', {}).get('K') or 1.0) if rate else 1.0   # null K (rate not certified) -> 1
     return _apply(w0, qT, m_ll, dphi_ll, d['moments'],
                   d['lambda_physical'], d['log_norm_shift'], d['gating'], gate, w0_tail, K,
@@ -130,10 +150,10 @@ def reweight(w0, qT, m_ll, dphi_ll, energy="13TeV", jpath=None, gate=True, w0_ta
 def reweight_scheme(w0, qT, m_ll, dphi_ll, scheme='central',
                     energy="13TeV", jpath=None, gate=True, w0_tail=None, rate=True, njet=None, njet_max=1, rate_tail=False):
     """One scale/NP scheme (scheme='central','2MuR',...). Repeat over all schemes, histogram
-    each, and pass the histograms to theory_band() for the band (per-scale quadrature, Wan-Li
-    Ju's rule; NOT the envelope over the 29 schemes). With generator tail variations add
+    each, and pass the histograms to theory_band() for the band (per-scale quadrature, the
+    calculation's rule; NOT the envelope over the 29 schemes). With generator tail variations add
     reweight(..., w0_tail=w0_V) for each generator variation V above the hand-off."""
-    d = json.load(open(jpath or _default(energy, variations=True)))
+    d = _load(jpath or _default(energy, variations=True))
     s = d['schemes'][scheme]
     K = (s.get('K') or d.get('rate', {}).get('K') or 1.0) if rate else 1.0
     return _apply(w0, qT, m_ll, dphi_ll, d['moments'],
@@ -143,12 +163,12 @@ def reweight_scheme(w0, qT, m_ll, dphi_ll, scheme='central',
 
 def schemes(energy="13TeV", jpath=None):
     """List the available scale/NP scheme names (central + 28 variations)."""
-    d = json.load(open(jpath or _default(energy, variations=True)))
+    d = _load(jpath or _default(energy, variations=True))
     return list(d['schemes'].keys())
 
 
 # ---------------------------------------------------------------------------------------------------
-# The theory band from the 29 scheme histograms: Wan-Li Ju's prescription (his notebook, cell rTSV).
+# The theory band from the 29 scheme histograms: the prescription of the calculation.
 #   up   = sqrt( sum over scales s of  max(h[2s] - h[central], h[0p5s] - h[central], 0)^2 )
 #   down = sqrt( sum over scales s of  min(h[2s] - h[central], h[0p5s] - h[central], 0)^2 )
 # Each of the 14 scales contributes the larger of its two deviations in each direction, clipped at
@@ -188,7 +208,7 @@ def theory_band(h, central="central"):
 if __name__ == '__main__':
     # self-test: parse all moment names, run on random events, report
     for energy in ("13TeV", "13p6TeV"):
-        d = json.load(open(_default(energy)))
+        d = _load(_default(energy))
         n = 100000
         rng = np.random.default_rng(0)
         w0 = rng.normal(1, 0.1, n); m = rng.uniform(60, 120, n)

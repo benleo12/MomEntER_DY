@@ -21,7 +21,7 @@ dphi  = rng.uniform(1e-3, 3.0, N)        # acoplanarity  d = pi - Delta phi_ll
 
 # --- central reweighting --------------------------------------------------------
 w = reweight(w0, qT, m_ll, dphi, energy="13TeV")
-print(f"central: sum(w)/sum(w0) = {w.sum()/w0.sum():.4f}  (=1 on the real prior)")
+print(f"central: sum(w)/sum(w0) = {w.sum()/w0.sum():.4f}  (on the real prior: K = sigma_calc/sigma_prior below the hand-off, 1 with rate=False)")
 
 # --- the theory uncertainty band: one weight set per scale/NP scheme ------------
 names = schemes("13TeV")                 # ['central','2MuR','0p5MuR', ... 29 total]

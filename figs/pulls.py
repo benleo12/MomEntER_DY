@@ -2,7 +2,10 @@
 calculation, with the Monte-Carlo uncertainty of the calculation and of the sample added in
 quadrature, over the bins below the hand-off (qT < 120 GeV, rT < 120 GeV/m_Z) and the full
 acoplanarity range.  Also the fraction of bins within one sigma and within the calculation's
-scale band.  Reads the H_<tag>.npz of make_paper_hists.py (needs the q_H2/r_H2/d_H2 arrays for
+scale band.  The calculation's fine-bin Monte-Carlo errors are merged in quadrature into the
+displayed bins (independent bins, rivet_style.MCERR="quad"); MCERR=lin gives the fully
+correlated merge used before 2026-09-27, which roughly halves the chi^2 in r_T and the
+acoplanarity (the q_T bins are not merged).  Reads the H_<tag>.npz of make_paper_hists.py (needs the q_H2/r_H2/d_H2 arrays for
 the sample's uncertainty; without them the calculation's uncertainty alone is used and said so).
 
     python pulls.py data/H_13TeV.npz [data/H_13p6TeV.npz ...]
@@ -41,7 +44,7 @@ def pulls(z, key):
 if __name__ == "__main__":
     for f in sys.argv[1:]:
         z = np.load(f, allow_pickle=True)
-        print(f"{f}: N_eff {100*float(z['neff']):.1f}%")
+        print(f"{f}: N_eff {100*float(z['neff']):.1f}%   (calc MC errors merged: {rs.MCERR})")
         for key, name in (("r", "rT"), ("d", "aco"), ("q", "qT")):
             o, have2 = pulls(z, key)
             s = f"  {name:3s} bins {o['rew']['nbins']:2d}  calc MC err {100*o['rew']['calc_err_med']:.2f}%"

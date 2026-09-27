@@ -16,7 +16,7 @@ from apply_lambdas import features
 
 CSV, LAM, LAMV = sys.argv[1], sys.argv[2], sys.argv[3]
 OUT = sys.argv[4] if len(sys.argv) > 4 else "FIG_ATLASFID_pwg186p.pdf"
-DAT = "atlas_data/ATLAS_2019_I1768911.yoda"
+DAT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "ATLAS_2019_I1768911.yoda")
 
 plt.rcParams.update({"text.usetex": False, "font.family": "serif", "mathtext.fontset": "dejavuserif",
     "font.size": 9, "axes.linewidth": 0.8, "xtick.direction": "in", "ytick.direction": "in",

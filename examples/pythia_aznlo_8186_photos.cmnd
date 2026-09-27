@@ -40,7 +40,7 @@ POWHEG:MPIveto = 0
 
 ! --- QED FSR ---
 ! ATLAS: Photos++ (InfraRedCutOff=1e-7) with Pythia's lepton QED off (TimeShower:QEDshowerByL = off).
-! Without a Photos++ build we keep Pythia's own QED FSR on (its default).  See README, item 3.
+! The shipped sample used Photos++ 3.56 with this setting; without a Photos++ build set it to on.
 TimeShower:QEDshowerByL = off
 
 Print:quiet = on

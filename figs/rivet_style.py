@@ -1,6 +1,6 @@
-"""Rivet make-plots house style (Stefan's figures): log-x over the full range, log-y spectrum on top with the
+"""Rivet make-plots house style (the paper's figures): log-x over the full range, log-y spectrum on top with the
 reference as black points when it is data and as a black histogram when it is a calculation (a prediction
-should not look like measured points, Hoeche), MC as step histograms with shaded uncertainty bands, and a
+should not look like measured points), MC as step histograms with shaded uncertainty bands, and a
 MC/Data (MC/Theory) panel spanning 0.6-1.4 underneath.  Everything is drawn from the npz files written on
 Perlmutter, so the style can be iterated without touching the samples.
 
@@ -13,7 +13,7 @@ import matplotlib; matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from matplotlib.ticker import FixedLocator, MultipleLocator
 
-# Rivet make-plots style (Stefan's default.mplstyle: Palatino/usetex, hairline axes,
+# Rivet make-plots style (the group's default.mplstyle: Palatino/usetex, hairline axes,
 # inward ticks, Rivet color cycle, frameless legend).  Looked up next to this script;
 # override with MPLSTYLE=/path/to/default.mplstyle.  USETEX=0 for LaTeX-less hosts.
 _STYLE = os.environ.get("MPLSTYLE", os.path.join(os.path.dirname(os.path.abspath(__file__)), "default.mplstyle"))
@@ -27,9 +27,14 @@ from cycler import cycler as _cyc
 C10 = ["#1f77b4","#ff7f0e","#2ca02c","#d62728","#9467bd","#8c564b","#e377c2","#7f7f7f","#bcbd22","#17becf"]
 plt.rcParams["axes.prop_cycle"] = _cyc(color=C10)
 RED, BLUE, GREY = "#d62728", "#1f77b4", "0.55"
-PRI, REW = "#AEC7E8", "#D62728"     # Stefan's convention: prior light blue solid, prediction red solid
-RLO, RHI = 0.5, 1.4999                                           # ratio panel as in Stefan's plots
+PRI, REW = "#AEC7E8", "#D62728"     # the paper's convention: prior light blue solid, prediction red solid
+RLO, RHI = 0.5, 1.4999                                           # ratio panel as in the paper's plots
 STACK = os.environ.get("STACK", "q,d").split(",")
+# How the calculation's per-bin Monte-Carlo errors are merged when its fine bins are combined into the
+# displayed bins: "quad" treats the fine bins as independent (the same convention as make_fig1_rivet.py
+# and the natural one for a Monte-Carlo integration); "lin" adds them linearly, i.e. fully correlated,
+# which is what the figures and pulls used before 2026-09-27 and gives a wider band and smaller chi^2.
+MCERR = os.environ.get("MCERR", "quad")
 ROW = os.environ.get("ROW", "0") == "1"   # side-by-side panels (two-column-spanning figures)
 THY_LABEL = r"N$^4$LL$^\prime$+N$^3$LO"
 
@@ -55,6 +60,14 @@ def rebin(e, y, e2, density=True):
     w = np.diff(e); out = np.zeros(len(e2) - 1)
     for j in range(len(out)):
         sl = slice(idx[j], idx[j + 1]); out[j] = np.sum(y[sl] * w[sl]) / (e2[j + 1] - e2[j]) if density else np.sum(y[sl])
+    return out
+
+def rebin_err(e, err, e2):
+    """merge per-bin density errors into coarser bins with the fine bins independent (quadrature)"""
+    idx = np.searchsorted(e, e2); assert np.allclose(e[idx], e2), "e2 not a subset of e"
+    w = np.diff(e); out = np.zeros(len(e2) - 1)
+    for j in range(len(out)):
+        sl = slice(idx[j], idx[j + 1]); out[j] = np.sqrt(np.sum((err[sl] * w[sl]) ** 2)) / (e2[j + 1] - e2[j])
     return out
 
 def snap(e_fine, targets):
@@ -143,7 +156,7 @@ def draw(ax, ar, e, ref, ref_err, pri, rew, rlo, rhi, prior_label, ref_label, re
     good = np.isfinite(ref) & (ref > 0); has = good & (pri > 0.05 * np.where(good, ref, 1))   # MC bins with <5% of the reference content are not a comparison
     nan = lambda y, m: np.where(m, y, np.nan)
     if ref_band is not None: bandfill(ax, e, nan(ref_band[0], good), nan(ref_band[1], good), GREY, alpha=0.35)
-    if ref_style == "hist": steps(ax, e, nan(ref, good), color="k", lw=1.2, zorder=5, label=ref_label)   # a calculation is a histogram, not data points (Hoeche)
+    if ref_style == "hist": steps(ax, e, nan(ref, good), color="k", lw=1.2, zorder=5, label=ref_label)   # a calculation is a histogram, not data points
     else:                   points(ax, e, nan(ref, good), nan(ref_err, good), label=ref_label)
     steps(ax, e, nan(pri, has), color=PRI, lw=1, zorder=6, label=prior_label)
     bandfill(ax, e, nan(rlo, has), nan(rhi, has), REW, alpha=0.20, zorder=7); steps(ax, e, nan(rew, has), color=REW, lw=1, zorder=7, label=rew_label)
@@ -177,8 +190,8 @@ DATA_LABEL = "ATLAS Data, EPJC80(2020)616"
 def rew_label_for(prior_label):
     """Label of the reweighted sample.  The merged Sherpa sample keeps its own prediction above the
     hand-off, so it is named with the calculation; POWHEG is reweighted everywhere and carries the
-    calculation's accuracy alone, so POWHEG appears only in the prior's label (Hoeche), and the
-    reweighted sample is marked as such in every figure (Assi)."""
+    calculation's accuracy alone, so POWHEG appears only in the prior's label, and the
+    reweighted sample is marked as such in every figure."""
     if "POWHEG" in prior_label: return r"N$^4$LL$^\prime$+N$^3$LO (reweighted)"
     return r"N$^4$LL$^\prime$+N$^3$LO+MEPS@NLO"
 
@@ -214,7 +227,10 @@ def thy_hists(z, key):
     else:                                                # theory normalised over its full range (r_T 0-5, d 0-2.51): MC likewise, then r_T truncated at 200 GeV/m_Z for display
         tot = np.nansum(H, axis=0)
         e2 = snap(e[e <= 200 / 91.19 + 0.005], ATLAS_QT[ATLAS_QT <= 200] / 91.19) if key == "r" else (e[::4] if np.isclose(e[-1], e[::4][-1]) else np.append(e[::4], e[-1]))
-        H = np.column_stack([rebin(e, H[:, c], e2, density=False) for c in range(H.shape[1])]); T = {k: rebin(e, v, e2) for k, v in T.items()}; e = e2
+        st = 0.5 * (T["sthi"] - T["stlo"])                                   # fine-bin MC error of the calculation
+        H = np.column_stack([rebin(e, H[:, c], e2, density=False) for c in range(H.shape[1])]); T = {k: rebin(e, v, e2) for k, v in T.items()}
+        if MCERR == "quad": st2 = rebin_err(e, st, e2); T["stlo"], T["sthi"] = T["cen"] - st2, T["cen"] + st2
+        e = e2
     return e, H, T, tot
 
 def thy_one(ax, ar, z, key, prior_label, title):

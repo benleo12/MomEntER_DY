@@ -17,12 +17,12 @@ from matplotlib.ticker import AutoMinorLocator, MultipleLocator
 OUT = sys.argv[1] if len(sys.argv) > 1 else "FIG1_calc_vs_ATLAS.pdf"
 MODE = sys.argv[2] if len(sys.argv) > 2 else "lin"   # lin | log | split
 ACC = "N4LL'+N3LO"
-# Fiducial qT with per-bin MC-integration uncertainty (Wan-Li, mll in [66,116],
+# Fiducial qT with per-bin MC-integration uncertainty (the calculation, mll in [66,116],
 # pT_l>=27, |eta_l|<=2.5): 4 columns {lo, hi, value, uncertainty}.
 THY = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "qT_fiducial_wunc_13TeV.m")
 DAT  = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "ATLAS_2019_I1768911.yoda")
 # d04 = zpt combined BORN normalised: the calculation uses Born-level leptons (no QED
-# FSR), so the Born table is the consistent comparison and matches Wan-Li's own plots.
+# FSR), so the Born table is the consistent comparison and matches the calculation's own plots.
 # The dressed table (d27) differs by +2.2% in [0,2] GeV, decreasing with qT.
 HIST = os.environ.get("ATLAS_HIST", "d04-x01-y01")
 # NOTE: d27 = dressed leptons.  HEPData Table 4a is Born level and differs by
@@ -59,7 +59,7 @@ print(f"  ATLAS[{HIST}]: {len(dat)} bins, [{lo[0]:.0f},{hi[-1]:.0f}] GeV, "
 
 # ---------------------------------------------------------------- theory
 def load_wju(path, acc):
-    """Parse Wan-Li qT .m file.  Handles Mathematica '*^' exponents, which the
+    """Parse the calculation's qT .m file.  Handles Mathematica '*^' exponents, which the
     shared loader does not (they appear in the fiducial file)."""
     txt = open(path, errors="ignore").read().replace("*^", "e")
     pat = (r'qTMat\["([^"]+)",\s*"([^"]+)",\s*"([^"]+)"\]\s*'
@@ -123,7 +123,7 @@ k = (ctr < 200) & (nv > 0)
 print(f"  numerical unc (real, fiducial): median "
       f"{100*np.median(rel_num[k]):.2f}%  max {100*rel_num[k].max():.2f}%")
 
-# Band construction following Wan-Li: the 28 variations are paired into 14 knobs
+# Band construction following the calculation: the 28 variations are paired into 14 knobs
 # (labelled 0p5 and 2: a factor of two for the scales, the quoted uncertainties for c0, kappa_NP
 # and the transition profile), and the per-knob deviations are added in QUADRATURE,
 #   err_up^2 = sum_knob max(r_up-c, r_dn-c, 0)^2   (down analog),
@@ -188,14 +188,14 @@ B.stairs(th[m]/dat[m], E, color=RED, lw=1, zorder=7)
 B.errorbar(ctr[m], np.ones(m.sum()), yerr=[dem[m]/dat[m], dep[m]/dat[m]], xerr=wid[m]/2, fmt="o",
            ms=2, lw=1, color="k", capsize=0, zorder=25)
 B.set_ylabel("Theory~/~Data"); B.set_ylim(0.955, 1.045); B.yaxis.set_major_locator(MultipleLocator(0.02))
-# The non-perturbative panel keeps the two inputs apart (Hoeche, Campbell): the Collins-Soper kernel
+# The non-perturbative panel keeps the two inputs apart: the Collins-Soper kernel
 # is calculated (lattice QCD) and drawn filled like the other calculated bands; kappa_NP is the one
 # parameter fitted to data and is drawn hatched.  Each band is its own per-scale variation, the two
 # are not stacked.
 import matplotlib.patches as mpatches
 DARKPURPLE = "#4b2e83"
 # "alone": each band is that input's own variation around the central value; they overlap and are
-# not a total and a part of it (Hoeche read the filled band as the combination, 2026-09-26).
+# not a total and a part of it (a reader took the filled band for the combination).
 NP_CS, NP_KA = "Collins-Soper kernel alone (lattice QCD)", r"$\kappa_{\rm NP}$ alone (fit to data)"
 panels = [("fixed order",      [(lo_fo, hi_fo, GREEN,  None)]),
           ("resummation, transition", [(lo_re, hi_re, ORANGE, None)]),   # the 8 resummation scales and the MuFtran pair

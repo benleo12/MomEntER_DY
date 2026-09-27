@@ -58,7 +58,7 @@
  QT_M = os.environ.get('QT_M') or next(
      (p for p in (f"wju_{_qdir}/{_QT_NAME}",
 -                 f"{os.path.dirname(os.path.abspath(__file__))}/wju_{_qdir}/{_QT_NAME}",
--                 f"/Users/user/Library/CloudStorage/Dropbox/DY_reweighting_data/wju/{_qdir}/{_QT_NAME}")
+-                 f"<local>/DY_reweighting_data/wju/{_qdir}/{_QT_NAME}")
 +                 f"{os.path.dirname(os.path.abspath(__file__))}/wju_{_qdir}/{_QT_NAME}")
       if os.path.exists(p)), f"wju_{_qdir}/{_QT_NAME}")
  print(f"  ENERGY={ENE}  prior={PRIOR}  MOM={MOM}")
@@ -70,7 +70,7 @@
  _QT_NAME = f"qT_1D_Dist_NP_{_qtag}_IncPS_varmT.m"
  QT_M = os.environ.get('QT_M') or next((p for p in (f"wju_{_qdir}/{_QT_NAME}",
 -        f"{os.path.dirname(os.path.abspath(__file__))}/wju_{_qdir}/{_QT_NAME}",
--        f"/Users/user/Library/CloudStorage/Dropbox/DY_reweighting_data/wju/{_qdir}/{_QT_NAME}") if os.path.exists(p)), None)
+-        f"<local>/DY_reweighting_data/wju/{_qdir}/{_QT_NAME}") if os.path.exists(p)), None)
 +        f"{os.path.dirname(os.path.abspath(__file__))}/wju_{_qdir}/{_QT_NAME}") if os.path.exists(p)), None)
  if QT_M is None: sys.exit(f"validate: no qT theory file found for {E} (set QT_M=...)")
  ACC = "N4LL'+N3LO"
@@ -81,7 +81,7 @@
                           "'plot': replot from saved lambdas (no Newton solve).")
  
      # Data paths
--    p.add_argument("--base_dir", default="/Users/user/Library/CloudStorage/Dropbox/LogMoments/LogdPhipT/ps")
+-    p.add_argument("--base_dir", default="<local>/LogMoments/LogdPhipT/ps")
 +    p.add_argument("--base_dir", default=".")
      p.add_argument("--prior_dir", default=None)
      p.add_argument("--mom_dir", default=None)
