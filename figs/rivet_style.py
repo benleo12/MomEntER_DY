@@ -182,7 +182,7 @@ def draw(ax, ar, e, ref, ref_err, pri, rew, rlo, rhi, prior_label, ref_label, re
                 rew_med=100*np.median(np.abs(rew[has]/ref[has]-1)), rew_max=100*np.max(np.abs(rew[has]/ref[has]-1)), nbins=int(has.sum()))
 
 # ---------------- POWHEG fiducial vs ATLAS -------------------------------------------------------------------
-FID = {"qt": dict(xl=r"$p_\mathrm{T}^{\ell\ell}$ [GeV]", yl=r"$1/\sigma\,\mathrm{d}\sigma/\mathrm{d}p_\mathrm{T}^{\ell\ell}$", xlo=0.5),
+FID = {"qt": dict(xl=r"$q_\mathrm{T}=p_\mathrm{T}^{\ell\ell}$ [GeV]", yl=r"$1/\sigma\,\mathrm{d}\sigma/\mathrm{d}q_\mathrm{T}$ [1/GeV]", xlo=0.5),
        "ps": dict(xl=r"$\phi^*_\eta$", yl=r"$1/\sigma\,\mathrm{d}\sigma/\mathrm{d}\phi^*_\eta$", xlo=2e-3)}
 FID_TITLE = {"qt": "Transverse momentum of the lepton pair", "ps": r"$\phi^*_\eta$ of the lepton pair"}
 FID_NOTES = (r"$pp\to l^+l^-$, dressed", r"$p_{T,l}\geq 27$ GeV, $|\eta_l|\leq 2.5$", r"$66$ GeV$\leq m_{ll}\leq 116$ GeV")
@@ -217,7 +217,7 @@ def fid(npz, pre, prior_label="POWHEG Prior"):
 THY_TITLE = {"q": "Transverse momentum of the lepton pair", "r": "Scaled transverse momentum of the lepton pair", "d": "Acoplanarity of the lepton pair"}
 THY = {"q": dict(xl=r"$q_\mathrm{T}=p_\mathrm{T}^{\ell\ell}$ [GeV]", yl=r"$1/\sigma\,\mathrm{d}\sigma/\mathrm{d}q_\mathrm{T}$ [1/GeV]", xlo=0.5, xs="log"),
        "r": dict(xl=r"$r_\mathrm{T}=q_\mathrm{T}/m_{\ell\ell}$", yl=r"$1/\sigma\,\mathrm{d}\sigma/\mathrm{d}r_\mathrm{T}$", xlo=0.005, xs="log"),
-       "d": dict(xl=r"acoplanarity $\;d=\pi-\Delta\phi_{\ell\ell}$", yl=r"$1/\sigma\,\mathrm{d}\sigma/\mathrm{d}d$", xlo=None, xs="lin")}
+       "d": dict(xl=r"$\phi_{\rm acop}=\pi-\Delta\phi_{\ell\ell}$", yl=r"$1/\sigma\,\mathrm{d}\sigma/\mathrm{d}\phi_{\rm acop}$", xlo=None, xs="lin")}
 ATLAS_QT = np.array([2,4,6,8,10,12,14,16,18,20,22.5,25,27.5,30,33,36,39,42,45,48,51,54,57,61,65,70,75,80,85,95,105,125,150,175,200,250,300,350,400,470,550,650,900])
 
 def thy_hists(z, key):
