@@ -1,4 +1,6 @@
-"""Agreement with the calculation as pulls: chi^2 per bin of the normalised spectrum against the
+"""Agreement with the calculation: per-bin deviations of the normalised spectrum from the
+calculation (median and maximum below the hand-off), the fraction of bins inside the calculation's
+scale band, and, as an additional measure, the chi^2 per bin against the
 calculation, with the Monte-Carlo uncertainty of the calculation and of the sample added in
 quadrature, over the bins below the hand-off (qT < 120 GeV, rT < 120 GeV/m_Z) and the full
 acoplanarity range.  Also the fraction of bins within one sigma and within the calculation's
@@ -35,7 +37,9 @@ def pulls(z, key):
         ds = np.sqrt(H2[:, col]) / w / tot[col] if have2 else np.zeros_like(d)
         sig = np.sqrt(st ** 2 + ds ** 2)
         pull = (d[ok] - cal[ok]) / sig[ok]
-        out[lab] = dict(chi2=float(np.mean(pull ** 2)), within1=float(np.mean(np.abs(pull) < 1)),
+        rel = np.abs(d[ok] / cal[ok] - 1)
+        out[lab] = dict(dev_med=float(np.median(rel)), dev_max=float(rel.max()),
+                        chi2=float(np.mean(pull ** 2)), within1=float(np.mean(np.abs(pull) < 1)),
                         inscale=float(np.mean(np.abs(d[ok] - cal[ok]) <= sc[ok])), nbins=int(ok.sum()),
                         sample_err_med=float(np.median(ds[ok] / cal[ok])) if have2 else None,
                         calc_err_med=float(np.median(st[ok] / cal[ok])))
@@ -50,5 +54,5 @@ if __name__ == "__main__":
             s = f"  {name:3s} bins {o['rew']['nbins']:2d}  calc MC err {100*o['rew']['calc_err_med']:.2f}%"
             s += f"  sample err {100*o['rew']['sample_err_med']:.2f}%" if have2 else "  (sample err NOT included)"
             for lab in ("prior", "rew"):
-                s += f" | {lab} chi2/bin {o[lab]['chi2']:5.1f} |pull|<1 {100*o[lab]['within1']:3.0f}% in scale band {100*o[lab]['inscale']:3.0f}%"
+                s += f" | {lab} dev med {100*o[lab]['dev_med']:4.1f}% max {100*o[lab]['dev_max']:4.1f}% in scale band {100*o[lab]['inscale']:3.0f}% chi2/bin {o[lab]['chi2']:5.1f}"
             print(s)
